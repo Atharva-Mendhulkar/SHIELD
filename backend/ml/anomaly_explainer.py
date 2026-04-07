@@ -8,6 +8,24 @@ MODEL_DIR = os.path.join(os.getcwd(), "backend", "ml", "models")
 # Z-score threshold above which a feature is flagged as anomalous
 Z_SCORE_FLAG_THRESHOLD = 2.5
 
+ANOMALY_TEMPLATES = {
+    "inter_key_delay_mean":    "Typing speed {direction} {pct}% from baseline",
+    "time_to_submit_otp_ms":   "OTP submitted {pct}% {direction} than user average",
+    "direct_to_transfer":      "Went directly to transfer — atypical navigation pattern",
+    "is_new_device":           "Device fingerprint unknown — never seen for this account",
+    "exploratory_ratio":       "Navigation {pct}% more exploratory than normal",
+    "hand_stability_score":    "Device motion stability {pct}% below baseline",
+    "session_duration_ms":     "Session {pct}% {direction} than user average",
+    "click_speed_std":         "Interaction timing variance {direction} — possible automation",
+    "swipe_velocity_mean":     "Touch behavior absent — possible non-mobile device",
+    "form_field_order_entropy":"Form completion order atypical",
+    "time_of_day_hour":        "Login at {hour}:00 — outside user's typical hours",
+    "typing_burst_count":      "Typing pattern: single unbroken burst — possible automation",
+    "error_rate":              "Zero typing errors — possible automated input",
+    # SIM swap always appended if active:
+    "SIM_SWAP":                "SIM swap event detected {minutes} minutes ago (telecom signal)",
+}
+
 
 def get_scaler_path(user_id: int) -> str:
     return os.path.join(MODEL_DIR, f"scaler_{user_id}.pkl")
@@ -68,27 +86,54 @@ def explain_anomalies(user_id: int, feature_vector: list) -> list[dict]:
     return results
 
 
-def top_anomaly_strings(user_id: int, feature_vector: list, top_n: int = 4) -> list[str]:
+def top_anomaly_strings(user_id: int, feature_vector: list, sim_swap_active: bool = False, top_n: int = 4) -> list[str]:
     """
     Return top N human-readable anomaly strings for display in alert feed.
-    Example: "inter_key_delay_mean: +3.8 std above baseline"
+    Always includes SIM swap if active.
     """
     explanations = explain_anomalies(user_id, feature_vector)
     flagged = [e for e in explanations if e["flagged"]]
 
     strings = []
-    for e in flagged[:top_n]:
-        direction = "above" if e["z_score"] > 0 else "below"
-        magnitude = abs(e["z_score"])
-        strings.append(
-            f"{e['name']}: {magnitude:.1f} std {direction} baseline "
-            f"(value={e['value']:.2f}, baseline={e['baseline_mean']:.2f})"
-        )
+    
+    # Priority 1: SIM Swap
+    if sim_swap_active:
+        msg = ANOMALY_TEMPLATES.get("SIM_SWAP", "SIM swap detected recently").format(minutes=6)
+        strings.append(msg)
+        
+    # Priority 2: Flagged Behavioral Anomalies
+    for e in flagged:
+        if len(strings) >= top_n:
+            break
+            
+        template = ANOMALY_TEMPLATES.get(e["name"])
+        if template:
+            direction = "faster" if e["z_score"] < 0 else "slower"
+            # Special logic for navigation/binary features
+            if e["name"] in ["direct_to_transfer", "is_new_device", "form_field_order_entropy"]:
+                direction = "atypical"
+            
+            # Simple pct calculation for templating
+            pct = int(abs(e["z_score"]) * 10)
+            
+            msg = template.format(
+                direction=direction,
+                pct=pct,
+                hour=int(e["value"]),
+                typical="9-20"
+            )
+            strings.append(msg)
+        else:
+            direction = "above" if e["z_score"] > 0 else "below"
+            magnitude = abs(e["z_score"])
+            strings.append(
+                f"{e['name']}: {magnitude:.1f} std {direction} baseline "
+            )
 
     if not strings:
         strings.append("No significant anomalies detected")
 
-    return strings
+    return strings[:top_n]
 
 
 def _build_empty_explanation(feature_vector: list) -> list[dict]:

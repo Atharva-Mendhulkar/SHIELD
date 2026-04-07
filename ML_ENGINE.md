@@ -1,4 +1,4 @@
-# SHIELD ML Engine — Technical Reference
+# SHIELD ML Engine -- Technical Reference
 
 > Behavioral biometric fraud detection layer for SIM swap prevention.
 > All models run CPU-only, per-user, sub-50ms inference budget.
@@ -57,7 +57,7 @@ anomaly_explainer.py                        │
 
 ### Role
 Single source of truth for all 47 behavioral feature names and their canonical order.
-No logic, no computation — pure contract.
+No logic, no computation -- pure contract.
 
 ### What It Contains
 
@@ -79,22 +79,22 @@ assert len(FEATURE_NAMES) == 47   # Hard crash if list ever breaks
 
 ### Why Each Group Matters
 
-**Touch Dynamics** — Every person applies unique pressure and swipe geometry.
+**Touch Dynamics** -- Every person applies unique pressure and swipe geometry.
 Attacker on new device has zero match to victim's touch profile.
 
-**Typing Biometrics** — Inter-key delay is person-specific, stable across sessions.
+**Typing Biometrics** -- Inter-key delay is person-specific, stable across sessions.
 Bots produce near-zero variance (`click_speed_std ≈ 0`). Human variance is always present.
 
-**Device Motion** — Phone held by owner has characteristic tilt and micro-vibration from typing.
+**Device Motion** -- Phone held by owner has characteristic tilt and micro-vibration from typing.
 New device / laptop substitution produces completely different accelerometer signature.
 
-**Navigation Graph** — Legitimate users browse; attackers go directly to payment.
+**Navigation Graph** -- Legitimate users browse; attackers go directly to payment.
 `direct_to_transfer = 1` with `exploratory_ratio ≈ 0` is strong fraud signal.
 
-**Temporal Behavior** — `time_to_submit_otp_ms` is critical signal.
+**Temporal Behavior** -- `time_to_submit_otp_ms` is critical signal.
 Human reads SMS OTP and types manually: ~8500ms. Bot pastes programmatically: ~800ms.
 
-**Device Context** — Binary flags. `is_new_device = 1` alone shifts SVM score significantly.
+**Device Context** -- Binary flags. `is_new_device = 1` alone shifts SVM score significantly.
 Categorical features do not need to be continuous to be informative.
 
 ### Assert Guard
@@ -132,13 +132,13 @@ Scores incoming sessions by distance from learned boundary.
 
 ### Why OneClassSVM
 
-- Training requires only legitimate sessions — no attack samples needed
+- Training requires only legitimate sessions -- no attack samples needed
 - RBF kernel creates non-linear boundary matching behavioral manifold
 - `nu` parameter absorbs natural legitimate variance (sick days, different environments)
-- Single `.pkl` file per user — no stored training data required at inference
+- Single `.pkl` file per user -- no stored training data required at inference
 - Inference: single distance computation, sub-millisecond
 
-### `train_model(user_id)` — Logic
+### `train_model(user_id)` -- Logic
 
 ```
 1. Open DB connection
@@ -153,10 +153,10 @@ Scores incoming sessions by distance from learned boundary.
    ├── scaler_{user_id}.pkl    (StandardScaler)
    └── metadata_{user_id}.pkl (min/max calibration anchors)
 9. Return {enrolled, sessions_used, model_saved}
-10. Close DB (finally block — always executes)
+10. Close DB (finally block -- always executes)
 ```
 
-### `predict_score(user_id, feature_vector)` — Logic
+### `predict_score(user_id, feature_vector)` -- Logic
 
 ```
 1. Load model, scaler, metadata from disk
@@ -164,7 +164,7 @@ Scores incoming sessions by distance from learned boundary.
 
 2. Wrap feature_vector in NumPy array shape (1, 47)
 3. scaler.transform(X) → normalized using SAME scaler from training
-   (critical: never refit scaler at inference — must use identical normalization)
+   (critical: never refit scaler at inference -- must use identical normalization)
 
 4. raw_score = model.decision_function(X_scaled)[0]
    → Positive: inside learned boundary (likely legitimate)
@@ -188,11 +188,11 @@ Scores incoming sessions by distance from learned boundary.
 ```
 Score   Meaning
 ─────────────────────────────────────────────────
-95–100  Deep inside training boundary — very legitimate
-85–95   Inside training boundary — legitimate
-75–85   Slightly outside training min — borderline
-45–75   Outside boundary — suspicious
- 0–45   Deep outlier — attack / strong anomaly
+95–100  Deep inside training boundary -- very legitimate
+85–95   Inside training boundary -- legitimate
+75–85   Slightly outside training min -- borderline
+45–75   Outside boundary -- suspicious
+ 0–45   Deep outlier -- attack / strong anomaly
 ─────────────────────────────────────────────────
 ```
 
@@ -241,10 +241,10 @@ Deterministic priority chain over two inputs.
 
 SIM swap is a binary, verifiable external event from telecom API.
 Combining probabilistic behavioral score with binary external signal
-using rules is more reliable than learning a combiner — no training data exists
+using rules is more reliable than learning a combiner -- no training data exists
 for such combinations, and rules are fully auditable.
 
-### `fuse_score(behavior_score, sim_swap_active)` — Logic
+### `fuse_score(behavior_score, sim_swap_active)` -- Logic
 
 ```
 Inputs:
@@ -321,21 +321,21 @@ Reuses scaler already fitted during `train_model()`.
 
 ### Why Z-Score
 
-- Reuses data already computed — zero marginal computation cost
+- Reuses data already computed -- zero marginal computation cost
 - Deterministic: identical input always produces identical explanation
 - Statistically interpretable: "3.8 standard deviations above your baseline"
 - RBI audit-compliant: regulator can independently verify calculation
 - Threshold |z| > 2.5 captures ~99% of normal variation within ±2.5σ
 
-### `explain_anomalies(user_id, feature_vector)` — Logic
+### `explain_anomalies(user_id, feature_vector)` -- Logic
 
 ```
 1. Validate len(feature_vector) == 47
    → raise ValueError if not (prevents silent wrong scores)
 
 2. Load scaler_{user_id}.pkl
-   → scaler.mean_  : array (47,) — user's historical mean per feature
-   → scaler.scale_ : array (47,) — user's historical std dev per feature
+   → scaler.mean_  : array (47,) -- user's historical mean per feature
+   → scaler.scale_ : array (47,) -- user's historical std dev per feature
    → FileNotFoundError: return empty explanation (z=0, flagged=False for all)
 
 3. Compute z-scores:
@@ -356,7 +356,7 @@ Reuses scaler already fitted during `train_model()`.
 6. Return sorted list
 ```
 
-### `top_anomaly_strings(user_id, feature_vector, top_n=4)` — Logic
+### `top_anomaly_strings(user_id, feature_vector, top_n=4)` -- Logic
 
 ```
 1. Call explain_anomalies()
@@ -373,12 +373,12 @@ Reuses scaler already fitted during `train_model()`.
 ```
 |z-score|   Interpretation
 ─────────────────────────────────────────────────
-0.0 – 1.0   Normal variation — within expected range
-1.0 – 2.0   Slight deviation — not flagged
-2.0 – 2.5   Moderate deviation — approaching threshold
-2.5 – 3.5   Flagged — statistically significant anomaly
-3.5 – 5.0   Strong anomaly — highly suspicious
-> 5.0       Extreme anomaly — near-certain fraud signal
+0.0 – 1.0   Normal variation -- within expected range
+1.0 – 2.0   Slight deviation -- not flagged
+2.0 – 2.5   Moderate deviation -- approaching threshold
+2.5 – 3.5   Flagged -- statistically significant anomaly
+3.5 – 5.0   Strong anomaly -- highly suspicious
+> 5.0       Extreme anomaly -- near-certain fraud signal
 ─────────────────────────────────────────────────
 ```
 
@@ -390,7 +390,7 @@ Reuses scaler already fitted during `train_model()`.
 | `time_to_submit_otp_ms` | 8500ms | 800ms | -3.2 | Bot pasted OTP programmatically |
 | `direct_to_transfer` | 0.15 | 1.0 | +4.1 | Straight to payment screen, no exploration |
 | `hand_stability_score` | 0.82 | 0.51 | -3.1 | Unfamiliar device, different grip |
-| `click_speed_std` | 120ms | 2ms | -4.7 | Inhuman consistency — automation |
+| `click_speed_std` | 120ms | 2ms | -4.7 | Inhuman consistency -- automation |
 
 ### Memory & Storage
 
@@ -418,7 +418,7 @@ Pattern is absolute: same physical device hitting multiple distinct accounts
 within 60 minutes has no legitimate explanation. Probabilistic model would
 introduce false positive risk where none is warranted. Rule is 100% precise.
 
-### `check_fleet_anomaly(device_fingerprint, user_id)` — Logic
+### `check_fleet_anomaly(device_fingerprint, user_id)` -- Logic
 
 ```
 1. Compute cutoff = now - 60 minutes
@@ -484,7 +484,7 @@ Detects temporal anomalies invisible to SVM (sequence order, behavioral rhythm).
 
 ### Model Used
 
-**`torch.nn.LSTM` — Sequence-to-sequence Autoencoder**
+**`torch.nn.LSTM` -- Sequence-to-sequence Autoencoder**
 
 ```
 Architecture:
@@ -498,8 +498,8 @@ Anomaly score: reconstruction error magnitude
 
 ### Why LSTM Autoencoder
 
-- SVM receives single aggregate vector — loses sequence ordering
-- LSTM processes each snapshot in order — position in session matters
+- SVM receives single aggregate vector -- loses sequence ordering
+- LSTM processes each snapshot in order -- position in session matters
 - Autoencoder trained only on legitimate sequences (same constraint as SVM)
 - High reconstruction error = session behavior sequence unlike training = anomaly
 - Catches behavioral rhythm: legitimate users slow down on transfer screens,
@@ -520,10 +520,10 @@ forward(x: Tensor[batch, seq_len, 47])
   return reconstructed                       # (batch, seq_len, 47)
 ```
 
-### `train_lstm(user_id, session_sequences)` — Logic
+### `train_lstm(user_id, session_sequences)` -- Logic
 
 ```
-Input: session_sequences — list of sessions
+Input: session_sequences -- list of sessions
        Each session = list of snapshots, each snapshot = 47 floats
        Shape per session: (num_snapshots, 47)
 
@@ -551,7 +551,7 @@ Input: session_sequences — list of sessions
 6. Return {trained, epochs, final_loss, anomaly_threshold, model_path}
 ```
 
-### `predict_lstm_score(user_id, session_sequence)` — Logic
+### `predict_lstm_score(user_id, session_sequence)` -- Logic
 
 ```
 1. Load lstm_{user_id}.pt + lstm_meta_{user_id}.pkl
@@ -592,7 +592,7 @@ threshold × 2.0+          0   (definite anomaly)
 | `hidden_dim` | 32 | Sufficient compression for 47-feature space |
 | `num_layers` | 1 | Single layer adequate for 4–6 step sequences |
 | `epochs` | 50 | Convergence typically at 30–40 for this scale |
-| `lr` | 0.001 | Adam default — stable convergence |
+| `lr` | 0.001 | Adam default -- stable convergence |
 | `batch_size` | 1 | Each session processed individually |
 | `threshold_buffer` | 1.2× | 20% above worst training error |
 
@@ -652,7 +652,7 @@ threshold × 2.0+          0   (definite anomaly)
 > [!TIP]
 > At 100K users, SVM-only storage (21 GB) fits on standard VPS SSD.
 > LSTM at 100K users (81 GB) requires dedicated storage. Compress with `gzip`
-> on old `.pkl` files — typical 40–60% reduction.
+> on old `.pkl` files -- typical 40–60% reduction.
 
 ### Runtime RAM Breakdown (One Request)
 
