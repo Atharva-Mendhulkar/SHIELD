@@ -43,32 +43,32 @@
 
 ```
 ┌─────────────────┐
-│   🔐 Login      │  → captures: typing rhythm, dwell time, error rate
+│  [LOGIN] Login  │  → captures: typing rhythm, dwell time, error rate
 │                 │
 │  [Username]     │
 │  [Password]     │
-│  [Login ▶]      │
+│  [Login [RUN]]  │
 └────────┬────────┘
          │
 ┌────────▼────────┐
-│  🏠 Dashboard   │  → captures: time-on-screen, navigation intent, scroll
+│ [DASHBOARD] Dash│  → captures: time-on-screen, navigation intent, scroll
 │                 │
-│  ₹3,42,580      │
+│  3,42,580 INR   │
 │  [Transfer]     │
 │  [History]      │
 │  [Profile]      │
 └────────┬────────┘
          │
 ┌────────▼────────┐
-│  💸 Transfer    │  → captures: form field order, speed, direct-to-transfer flag
+│ [TRANSFER] Trans│  → captures: form field order, speed, direct-to-transfer flag
 │                 │
 │  [Beneficiary]  │
 │  [Amount]       │
-│  [Send ▶]       │
+│  [Send [RUN]]   │
 └────────┬────────┘
          │
 ┌────────▼────────┐
-│  📱 OTP Screen  │  → captures: time_to_submit_otp_ms (KEY attacker signal)
+│ [MOBILE] OTP    │  → captures: time_to_submit_otp_ms (KEY attacker signal)
 │                 │
 │  Enter OTP:     │
 │  [_ _ _ _ _ _]  │
@@ -78,7 +78,7 @@
     ┌────┴────┐
     │         │
 ┌───▼───┐ ┌──▼──────────────┐
-│  ✅   │ │ 🔒 FREEZE MODAL  │
+│ [DONE]│ │ [LOCKED] FREEZE  │
 │ Done  │ │                 │
 │       │ │ Transaction     │
 │       │ │ blocked.        │
@@ -91,39 +91,39 @@
 
 - **Color:** Deep navy `#0A1628` background, white text, `#FFD700` gold accent — premium banking aesthetic
 - **Phone frame:** CSS device frame around the 375px app. Judges instantly read "this is a phone"
-- **BehaviorShield badge:** Small pulsing green dot + "Protected" in top-right corner of every screen. Turns red when anomaly detected
+- **S.H.I.E.L.D badge:** Small pulsing green dot + "Protected" in top-right corner of every screen. Turns red when anomaly detected
 - **No visible scoring here** — this app is intentionally unaware-looking. The magic happens on the dashboard, not here
 - **Behavioral SDK runs silently** — no UI indication that signals are being captured (realistic)
-- **Freeze modal:** Full-screen red overlay, not a small popup. Dramatic. Lock icon. "Your transaction has been frozen by BehaviorShield."
+- **Freeze modal:** Full-screen red overlay, not a small popup. Dramatic. Lock icon. "Your transaction has been frozen by S.H.I.E.L.D."
 
 ---
 
 ## FRONTEND 2 — Bank Analyst Dashboard (The Bank's Eyes)
 
-**Purpose:** Real-time fraud ops view. Shows the bank's analyst what BehaviorShield sees. This is the **judge-facing centerpiece** — they watch this while the attack unfolds on Frontend 1.
+**Purpose:** Real-time fraud ops view. Shows the bank's analyst what S.H.I.E.L.D sees. This is the **judge-facing centerpiece** — they watch this while the attack unfolds on Frontend 1.
 
 **Layout:** Full desktop width, 3-column layout.
 
 ```
 ┌──────────────────────────────────────────────────────────────────────┐
-│  BehaviorShield  •  Fraud Operations Center          🟢 LIVE         │
+│  S.H.I.E.L.D  •  Fraud Operations Center          [LIVE] LIVE      │
 ├─────────────────┬────────────────────────────┬───────────────────────┤
 │                 │                            │                       │
 │  USER PROFILE   │   CONFIDENCE SCORE         │  ACTIVE ALERTS        │
 │                 │                            │                       │
-│  Atharva Kumar  │   ╔══════════════╗          │  🔴 SIM SWAP ACTIVE   │
+│  Atharva Kumar  │   ╔══════════════╗          │  [CRITICAL] SIM SWAP  │
 │  Acc: ****4521  │   ║      27      ║          │  Triggered: 6min ago  │
 │  Risk: CRITICAL │   ║  ██████████  ║          │                       │
-│                 │   ╚══════════════╝          │  🔴 New Device        │
-│  Enrolled: ✅   │                            │  Fingerprint unknown  │
-│  Sessions: 10   │   RISK: ■ CRITICAL          │                       │
-│  Baseline: 91   │   ACTION: BLOCK+FREEZE      │  🟡 Typing Anomaly    │
+│                 │   ╚══════════════╝          │  [CRITICAL] New Dev.  │
+│  Enrolled: [DONE]│                            │  Fingerprint unknown  │
+│  Sessions: 10   │   RISK: [CRITICAL]          │                       │
+│  Baseline: 91   │   ACTION: BLOCK+FREEZE      │  [WARNING] Typing     │
 │                 │                            │  +80% delay           │
 │  Device:        │   [Live LineChart]          │                       │
-│  Known: 3       │   91→74→58→44→27           │  🟡 Navigation        │
-│  Current: ❌NEW │                            │  Direct to transfer   │
+│  Known: 3       │   91→74→58→44→27           │  [WARNING] Navigation │
+│  Current: [NEW]│                            │  Direct to transfer   │
 │                 │                            │                       │
-│                 │                            │  [SEND SMS ALERT ▶]   │
+│                 │                            │  [SEND SMS ALERT [RUN]]│
 ├─────────────────┴────────────────────────────┴───────────────────────┤
 │                                                                      │
 │  TOP ANOMALIES (Why we blocked this)                                 │
@@ -141,7 +141,7 @@
 │  6s    Typing captured  (score: 74)      ●────                       │
 │  12s   Navigation logged (score: 58)              ●────              │
 │  18s   Device mismatch  (score: 44)                        ●────     │
-│  24s   SIM swap fused   (score: 27) 🔒 BLOCKED                  ●   │
+│  24s   SIM swap fused   (score: 27) [LOCKED] BLOCKED              ●   │
 │                                                                      │
 └──────────────────────────────────────────────────────────────────────┘
 ```
@@ -165,26 +165,26 @@
 
 ```
 ┌──────────────────────────────────────────────────────────────────────┐
-│  ⚡ BehaviorShield Attack Simulator          [RESET ALL]             │
+│  [ACTIVE] S.H.I.E.L.D Attack Simulator          [RESET ALL]          │
 ├─────────────────────────────────────┬────────────────────────────────┤
 │                                     │                                │
 │  SCENARIO SELECT                    │  CURRENTLY RUNNING             │
 │                                     │                                │
 │  ┌─────────────────────────────┐    │  Scenario 1: New Device        │
-│  │ 1. New Phone + SIM (Strong) │◀── │  Status: 🔴 BLOCKED            │
+│  │ 1. New Phone + SIM (Strong) │◀── │  Status: [CRITICAL] BLOCKED    │
 │  │ 2. Laptop + OTP SIM         │    │  Score: 27                     │
 │  │ 3. Automated Bot Attack     │    │  Time: 28s                     │
 │  │ 4. Same Device Takeover     │    │                                │
-│  │ 5. Legitimate User Control  │    │  Detection: ✅                 │
+│  │ 5. Legitimate User Control  │    │  Detection: [DONE]             │
 │  └─────────────────────────────┘    │  False Positive: —             │
 │                                     │                                │
 │  STEP CONTROLS                      │                                │
 │                                     │                                │
-│  [1. Enroll User        ✅ Done]    │                                │
-│  [2. Establish Baseline ✅ Done]    │                                │
-│  [3. Trigger SIM Swap   ▶ Fire ]    │                                │
-│  [4. Run Attack Session ▶ Start]    │                                │
-│  [5. Compare: Legacy    ▶ Show ]    │                                │
+│  [1. Enroll User        [DONE] Done]│                                │
+│  [2. Establish Baseline [DONE] Done]│                                │
+│  [3. Trigger SIM Swap   [FIRE] Fire]                                │
+│  [4. Run Attack Session [START] Start]                               │
+│  [5. Compare: Legacy    [SHOW] Show]                                │
 │                                     │                                │
 ├─────────────────────────────────────┴────────────────────────────────┤
 │                                                                      │
@@ -192,13 +192,13 @@
 │                                                                      │
 │  Scenario              │ Score │ Detection │ Time   │ Result         │
 │  ──────────────────────┼───────┼───────────┼────────┼─────────────  │
-│  1. New Device + SIM   │  27   │    ✅     │  28s   │ BLOCKED        │
-│  2. Laptop + OTP SIM   │  31   │    ✅     │  34s   │ BLOCKED        │
-│  3. Bot Automation     │  19   │    ✅     │  12s   │ BLOCKED        │
-│  4. Same Device        │  48   │    ✅     │  52s   │ STEP-UP AUTH   │
+│  1. New Device + SIM   │  27   │    [DONE]    │  28s   │ BLOCKED        │
+│  2. Laptop + OTP SIM   │  31   │    [DONE]    │  34s   │ BLOCKED        │
+│  3. Bot Automation     │  19   │    [DONE]    │  12s   │ BLOCKED        │
+│  4. Same Device        │  48   │    [DONE]    │  52s   │ STEP-UP AUTH   │
 │  5. Legitimate User    │  89   │    —      │   —    │ ALLOWED        │
 │  ──────────────────────┼───────┼───────────┼────────┼─────────────  │
-│  Legacy Rule-Based     │  N/A  │    ❌     │  N/A   │ APPROVED ❌    │
+│  Legacy Rule-Based     │  N/A  │    [NO]     │  N/A   │ APPROVED [NO]  │
 │                                                                      │
 ├──────────────────────────────────────────────────────────────────────┤
 │                                                                      │
@@ -206,12 +206,12 @@
 │                                                                      │
 │  Feature                  │ User Baseline │ This Session │ Z-Score   │
 │  ─────────────────────────┼───────────────┼──────────────┼────────── │
-│  inter_key_delay_mean     │    180ms      │    310ms     │  +3.8 🔴  │
-│  time_to_submit_otp_ms    │   8500ms      │   2100ms     │  -3.2 🔴  │
-│  direct_to_transfer       │     0.15      │     1.0      │  +4.1 🔴  │
-│  hand_stability_score     │     0.82      │     0.51     │  -3.1 🔴  │
-│  is_new_device            │      0        │      1       │  CAT 🔴  │
-│  exploratory_ratio        │     0.08      │     0.35     │  +3.4 🔴  │
+│  inter_key_delay_mean     │    180ms      │    310ms     │  +3.8 [CRITICAL]  │
+│  time_to_submit_otp_ms    │   8500ms      │   2100ms     │  -3.2 [CRITICAL]  │
+│  direct_to_transfer       │     0.15      │     1.0      │  +4.1 [CRITICAL]  │
+│  hand_stability_score     │     0.82      │     0.51     │  -3.1 [CRITICAL]  │
+│  is_new_device            │      0        │      1       │  CAT [CRITICAL]   │
+│  exploratory_ratio        │     0.08      │     0.35     │  +3.4 [CRITICAL]  │
 │                                                                      │
 └──────────────────────────────────────────────────────────────────────┘
 ```
@@ -350,12 +350,12 @@ Projector shows the banking app (what the "user" sees). Your laptop shows the at
 
 | Scenario | Detection Strength | Score | Time | Action |
 |---|---|---|---|---|
-| New Device + SIM | 🟢 Very Strong | 27 | 28s | BLOCK + FREEZE |
-| Laptop + OTP SIM | 🟢 Strong | 31 | 34s | BLOCK |
-| Bot Automation | 🟢 Strongest | 19 | 12s | BLOCK |
-| Same Device | 🟡 Moderate (honest) | 48 | 52s | STEP-UP |
-| Credential Stuffing | 🟢 Strong (fleet) | 22 | 2nd account | FREEZE ALL |
-| Pre-auth Probe | 🟢 Novel | — | Pre-login | EARLY WARN |
-| Legitimate User | ✅ No action | 89 | — | ALLOW |
-| Legacy Rule-Based | ❌ All pass | N/A | — | APPROVED |
+| New Device + SIM | [SAFE] Very Strong | 27 | 28s | BLOCK + FREEZE |
+| Laptop + OTP SIM | [SAFE] Strong | 31 | 34s | BLOCK |
+| Bot Automation | [SAFE] Strongest | 19 | 12s | BLOCK |
+| Same Device | [WARNING] Moderate (honest) | 48 | 52s | STEP-UP |
+| Credential Stuffing | [SAFE] Strong (fleet) | 22 | 2nd account | FREEZE ALL |
+| Pre-auth Probe | [SAFE] Novel | — | Pre-login | EARLY WARN |
+| Legitimate User | [DONE] No action | 89 | — | ALLOW |
+| Legacy Rule-Based | [NO] All pass | N/A | — | APPROVED |
 

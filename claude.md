@@ -605,7 +605,7 @@ app.add_middleware(
 ```python
 def send_alert(to_number: str, score: int, top_anomalies: list[str]) -> str:
     # Message format:
-    # "🚨 BehaviorShield Alert: Suspicious activity on your account.
+    # "[ALERT] BehaviorShield Alert: Suspicious activity on your account.
     #  Risk score: {score}/100.
     #  Reason: {anomalies[0]}, {anomalies[1]}.
     #  Your transaction has been frozen. Call 1800-XXX-XXXX to verify."

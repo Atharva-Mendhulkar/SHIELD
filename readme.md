@@ -14,62 +14,49 @@ India loses ₹500 Crore/year to SIM swap fraud. Every Indian bank detects this:
 
 ## SYSTEM ARCHITECTURE
 
-```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                              BEHAVIORSHIELD                                 │
-│                                                                             │
-│  ┌─────────────────┐   ┌──────────────────────┐   ┌─────────────────────┐  │
-│  │  FRONTEND 1     │   │  FRONTEND 2           │   │  FRONTEND 3         │  │
-│  │                 │   │                      │   │                     │  │
-│  │  Mobile Banking │   │  Bank Analyst        │   │  Attack Simulation  │  │
-│  │  App (PWA)      │   │  Dashboard           │   │  Control Panel      │  │
-│  │                 │   │                      │   │                     │  │
-│  │  375px viewport │   │  Full desktop width  │   │  Full desktop width │  │
-│  │  Phone frame UI │   │  3-column layout     │   │  Terminal aesthetic │  │
-│  │  React 18 + TS  │   │  React 18 + TS       │   │  React 18 + TS      │  │
-│  │                 │   │                      │   │                     │  │
-│  │  Captures:      │   │  Shows:              │   │  Controls:          │  │
-│  │  • Keystrokes   │   │  • Live score        │   │  • 6 scenarios      │  │
-│  │  • Touch events │   │  • Anomaly feed      │   │  • Step-by-step     │  │
-│  │  • Navigation   │   │  • Session timeline  │   │  • Feature inspect  │  │
-│  │  • Device motion│   │  • Alert dispatch    │   │  • Compare table    │  │
-│  │  • Timing       │   │  • Feature z-scores  │   │  • Legacy contrast  │  │
-│  └────────┬────────┘   └──────────┬───────────┘   └──────────┬──────────┘  │
-│           │                       │                           │             │
-│           └───────────────────────┴───────────────────────────┘             │
-│                                           │                                 │
-│                               ┌───────────▼──────────┐                     │
-│                               │                      │                     │
-│                               │   FASTAPI BACKEND    │                     │
-│                               │   localhost:8000     │                     │
-│                               │                      │                     │
-│                               │  Routers:            │                     │
-│                               │  • /session          │                     │
-│                               │  • /score            │                     │
-│                               │  • /enroll           │                     │
-│                               │  • /sim-swap         │                     │
-│                               │  • /alert            │                     │
-│                               │  • /scenarios        │                     │
-│                               │  • /features         │                     │
-│                               │  • /fleet            │                     │
-│                               │                      │                     │
-│                               └───────────┬──────────┘                     │
-│                                           │                                 │
-│              ┌────────────────────────────┼──────────────────┐              │
-│              │                            │                  │              │
-│   ┌──────────▼──────────┐  ┌─────────────▼──────┐  ┌────────▼──────────┐  │
-│   │                     │  │                    │  │                   │  │
-│   │   ML ENGINE         │  │   SQLite DB        │  │  EXTERNAL APIs    │  │
-│   │                     │  │                    │  │                   │  │
-│   │  • One-Class SVM    │  │  • users           │  │  • Twilio SMS     │  │
-│   │  • LSTM Autoencoder │  │  • sessions        │  │  • Mock Telecom   │  │
-│   │  • Score Fusion     │  │  • scores          │  │    SIM Swap API   │  │
-│   │  • Anomaly Explain  │  │  • sim_swap_events │  │                   │  │
-│   │  • Fleet Anomaly    │  │  • alert_log       │  │                   │  │
-│   │                     │  │  • device_registry │  │                   │  │
-│   └─────────────────────┘  └────────────────────┘  └───────────────────┘  │
-│                                                                             │
-└─────────────────────────────────────────────────────────────────────────────┘
+```mermaid
+graph TD
+    %% Client Application Layer
+    subgraph Client ["Client Applications (Frontends)"]
+        F1["Frontend 1: Mobile Banking App<br/>(PWA, 375px viewport, React 18 + TS)"]
+        F2["Frontend 2: Bank Analyst Dashboard<br/>(Full desktop width, React 18 + TS)"]
+        F3["Frontend 3: Attack Simulator Control Panel<br/>(Terminal aesthetic, React 18 + TS)"]
+    end
+
+    %% Backend Server Layer
+    subgraph Backend ["FastAPI Backend (localhost:8000)"]
+        API["API Core (FastAPI Python 3.11)"]
+        Routes["Routers: /session, /score, /enroll,<br/>/sim-swap, /alert, /scenarios,<br/>/features, /fleet"]
+        API --- Routes
+    end
+
+    %% Security Engine Layer
+    subgraph Engine ["ML Engine & Risk Engine"]
+        ML["ML ENGINE<br/>One-Class SVM<br/>LSTM Autoencoder<br/>Score Fusion<br/>Anomaly Explain<br/>Fleet Anomaly"]
+    end
+
+    %% Storage Layer
+    subgraph Storage ["Persistence Layer"]
+        DB[("SQLite Database<br/>users, sessions, scores,<br/>sim_swap_events, alert_log,<br/>device_registry")]
+    end
+
+    %% External Connectivity Layer
+    subgraph External ["External Integrations"]
+        Twilio["Twilio SMS API"]
+        Telecom["Mock Telecom API<br/>(SIM Swap Event Propagation)"]
+    end
+
+    %% Key Data Flows
+    F1 <--> API
+    F2 <--> API
+    F3 <--> API
+
+    API <--> ML
+    API <--> DB
+    ML <--> DB
+
+    API --> Twilio
+    API --> Telecom
 ```
 
 ---
@@ -80,8 +67,8 @@ India loses ₹500 Crore/year to SIM swap fraud. Every Indian bank detects this:
 behaviourshield/
 │
 ├── README.md                          ← this file
-├── CLAUDE.md                          ← agent build specification
-├── .env                               ← fill before building (see ENV section)
+├── backend.md                         ← code dump (reference)
+├── frontend.md                        ← code dump (reference)
 ├── .env.example                       ← template
 ├── .gitignore
 │
@@ -89,68 +76,35 @@ behaviourshield/
 │   ├── package.json
 │   ├── tsconfig.json
 │   ├── vite.config.ts
-│   ├── tailwind.config.js
 │   ├── index.html
 │   └── src/
 │       ├── main.tsx
 │       ├── App.tsx                    ← router: / = banking, /dashboard, /simulator
 │       │
-│       ├── apps/
-│       │   ├── BankingApp/            ← FRONTEND 1
-│       │   │   ├── index.tsx          ← phone frame wrapper
-│       │   │   ├── screens/
-│       │   │   │   ├── Login.tsx
-│       │   │   │   ├── Dashboard.tsx
-│       │   │   │   ├── Transfer.tsx
-│       │   │   │   ├── OTPScreen.tsx
-│       │   │   │   └── FreezeModal.tsx
-│       │   │   └── components/
-│       │   │       ├── ShieldBadge.tsx    ← pulsing green/red indicator
-│       │   │       └── PhoneFrame.tsx     ← CSS device frame
-│       │   │
-│       │   ├── AnalystDashboard/      ← FRONTEND 2
-│       │   │   ├── index.tsx          ← 3-column layout root
-│       │   │   ├── panels/
-│       │   │   │   ├── UserProfile.tsx
-│       │   │   │   ├── ScorePanel.tsx     ← giant score + LineChart
-│       │   │   │   ├── AlertFeed.tsx
-│       │   │   │   ├── AnomalyList.tsx
-│       │   │   │   ├── SessionTimeline.tsx
-│       │   │   │   └── FeatureTable.tsx
-│       │   │   └── components/
-│       │   │       ├── RiskBadge.tsx
-│       │   │       └── ScoreChart.tsx     ← Recharts LineChart
-│       │   │
-│       │   └── AttackSimulator/       ← FRONTEND 3
-│       │       ├── index.tsx          ← simulator root
-│       │       ├── panels/
-│       │       │   ├── ScenarioSelector.tsx
-│       │       │   ├── StepControls.tsx
-│       │       │   ├── ComparisonTable.tsx    ← builds row-by-row live
-│       │       │   ├── FeatureInspector.tsx   ← 47-feature z-score view
-│       │       │   └── LegacyContrast.tsx     ← rule-based system output
-│       │       └── scenarios/
-│       │           ├── scenario1.ts   ← new device + SIM
-│       │           ├── scenario2.ts   ← laptop + OTP SIM
-│       │           ├── scenario3.ts   ← bot automation
-│       │           ├── scenario4.ts   ← same device takeover
-│       │           ├── scenario5.ts   ← credential stuffing + fleet
-│       │           ├── scenario6.ts   ← pre-auth SIM probe
-│       │           └── legitimate.ts  ← control: normal user
+│       ├── pages/
+│       │   ├── BankingAppPage.tsx     ← Mobile banking interface
+│       │   ├── DashboardPage.tsx      ← Analyst view
+│       │   └── SimulatorPage.tsx      ← Control panel
+│       │
+│       ├── components/
+│       │   ├── AttackSimulator.tsx
+│       │   ├── ScoreDashboard.tsx
+│       │   └── ...
 │       │
 │       ├── hooks/
-│       │   ├── useBehaviorSDK.ts      ← captures real browser behavioral signals
-│       │   ├── useScoreStream.ts      ← polls /score every 2s
-│       │   ├── useSession.ts          ← session lifecycle management
-│       │   └── useSimulator.ts        ← scenario playback state machine
+│       │   └── useBehaviorSDK.ts      ← captures real behavioral signals
 │       │
-│       ├── lib/
-│       │   ├── api.ts                 ← typed fetch wrappers for all endpoints
-│       │   ├── featureExtractor.ts    ← client-side 47-feature vector construction
-│       │   └── constants.ts           ← thresholds, risk levels, colors
+│       ├── types/
+│       │   └── index.ts               ← standardized TS interfaces
 │       │
-│       └── types/
-│           └── index.ts               ← all shared TypeScript types
+│       └── lib/                       ← utility functions
+│
+├── backend/
+│   ├── main.py                        ← FastAPI app
+│   ├── routers/                       ← API route logic
+│   ├── ml/                            ← ML models and fusion logic
+│   ├── db/                            ← SQLite models and DB init
+│   └── data/                          ← Scenario seed data
 │
 ├── backend/
 │   ├── requirements.txt
@@ -324,12 +278,12 @@ window.addEventListener('touchstart', onTouch)      // touch dynamics
 User: Atharva Kumar
 Account: ****4521
 Risk Level: [badge — color changes live]
-Enrolled: ✅
+Enrolled: [DONE]
 Sessions: 10
 Baseline Score: 91
 Known Devices: 3
-Current Device: ❌ UNKNOWN
-SIM Status: ⚡ SWAP ACTIVE
+Current Device: [NO] UNKNOWN
+SIM Status: [ACTIVE] SWAP ACTIVE
 ```
 
 ### Column 2 — Score Panel (centerpiece)
@@ -344,18 +298,18 @@ Reference lines: dashed at 45 (step-up) and 30 (block)
 Line color: green above 70, amber 45–70, red below 45
 
 RISK LEVEL: ■ CRITICAL     (badge, color-coded)
-ACTION: 🔒 BLOCK + FREEZE  (badge)
+ACTION: [BLOCK] BLOCK + FREEZE  (badge)
 ```
 
 ### Column 3 — Alert Feed
 ```
 Each alert is a card, fades in as detected:
-🔴 SIM SWAP ACTIVE — 6 min ago
-🔴 New device fingerprint
-🟡 Typing anomaly — +80% delay
-🟡 Navigation — direct to transfer
+[CRITICAL] SIM SWAP ACTIVE — 6 min ago
+[CRITICAL] New device fingerprint
+[WARNING] Typing anomaly — +80% delay
+[WARNING] Navigation — direct to transfer
 
-[SEND SMS ALERT ▶] button — fires Twilio in live demo
+[SEND SMS ALERT [RUN]] button — fires Twilio in live demo
 ```
 
 ### Bottom — Anomaly List + Session Timeline
@@ -367,11 +321,11 @@ TOP ANOMALIES (fades in one-by-one as each snapshot fires):
 4. SIM swap event — 6 minutes ago (telecom API)
 
 SESSION TIMELINE (horizontal, git-blame style):
-0s  ●── Login (91)
-6s       ●── Typing (74)
-12s           ●── Navigation (58)
-18s                ●── Device (44)
-24s                     ●── SIM fused (27) 🔒
+0s  [o]── Login (91)
+6s       [o]── Typing (74)
+12s           [o]── Navigation (58)
+18s                [o]── Device (44)
+24s                     [o]── SIM fused (27) [BLOCK]
 Click any node → shows that snapshot's feature values
 ```
 
@@ -386,40 +340,39 @@ Click any node → shows that snapshot's feature values
 **Visual:** Near-black `#09090B` terminal aesthetic, green `#00FF88` for safe, red for blocks.
 
 ### Scenario Selector
-6 scenarios + 1 control, pre-seeded, instant-load. No loading spinners.
+5 scenarios + 1 control, pre-seeded, instant-load.
 ```
 1. New Phone + SIM (Strong detection)
 2. Laptop + OTP SIM (Device modality switch)
 3. Automated Bot Attack (Fastest detection — 12s)
 4. Same Device Takeover (Honest moderate case)
-5. Credential Stuffing + Fleet Anomaly (NEW)
-6. Pre-Auth SIM Probe (NEW — catches before login)
-7. Legitimate User (Control — should ALLOW)
+5. Credential Stuffing + Fleet Anomaly (Multiple accounts)
+6. Legitimate User (Control — should ALLOW)
 ```
 
 ### Step Controls
 Buttons disable until previous step completes — no wrong-order execution:
 ```
-[1. Enroll User        ✅ Done]
-[2. Establish Baseline ✅ 91 ]
-[3. Trigger SIM Swap   ▶ Fire]
-[4. Run Attack Session ▶ Run ]
-[5. Compare: Legacy    ▶ Show]
+[1. Enroll User        [DONE] Done]
+[2. Establish Baseline [DONE] 91 ]
+[3. Trigger SIM Swap   [RUN] Fire]
+[4. Run Attack Session [RUN] Run ]
+[5. Compare: Legacy    [RUN] Show]
 ```
 
 ### Comparison Table (builds live, row by row)
 ```
 Scenario              | Score | Detected | Time  | Result
 ─────────────────────────────────────────────────────────
-1. New Device + SIM   |  27   |    ✅    |  28s  | BLOCKED
-2. Laptop + OTP SIM   |  31   |    ✅    |  34s  | BLOCKED
-3. Bot Automation     |  19   |    ✅    |  12s  | BLOCKED
-4. Same Device        |  48   |    ✅    |  52s  | STEP-UP
-5. Credential Stuff.  |  22   |    ✅    |  2nd  | ALL FROZEN
-6. Pre-Auth Probe     |  —    |    ✅    |  Pre  | EARLY WARN
-7. Legitimate User    |  89   |    —     |   —   | ALLOWED ✅
+1. New Device + SIM   |  27   |    [DONE]    |  28s  | BLOCKED
+2. Laptop + OTP SIM   |  31   |    [DONE]    |  34s  | BLOCKED
+3. Bot Automation     |  19   |    [DONE]    |  12s  | BLOCKED
+4. Same Device        |  48   |    [DONE]    |  52s  | STEP-UP
+5. Credential Stuff.  |  22   |    [DONE]    |  2nd  | ALL FROZEN
+6. Pre-Auth Probe     |  —    |    [DONE]    |  Pre  | EARLY WARN
+7. Legitimate User    |  89   |    —     |   —   | ALLOWED [DONE]
 ─────────────────────────────────────────────────────────
-Legacy Rule-Based     |  N/A  |    ❌    |  N/A  | APPROVED ❌
+Legacy Rule-Based     |  N/A  |    [NO]    |  N/A  | APPROVED [NO]
 ```
 
 ### Feature Inspector
@@ -427,12 +380,12 @@ Legacy Rule-Based     |  N/A  |    ❌    |  N/A  | APPROVED ❌
 ```
 Feature                  | Baseline | Session  | Z-Score
 ─────────────────────────────────────────────────────────
-inter_key_delay_mean     |  180ms   |  310ms   | +3.8 🔴
-time_to_submit_otp_ms    |  8500ms  |  2100ms  | -3.2 🔴
-direct_to_transfer       |  0.15    |  1.0     | +4.1 🔴
-hand_stability_score     |  0.82    |  0.51    | -3.1 🔴
-is_new_device            |  0       |  1       | CAT  🔴
-exploratory_ratio        |  0.08    |  0.35    | +3.4 🔴
+inter_key_delay_mean     |  180ms   |  310ms   | +3.8 [CRITICAL]
+time_to_submit_otp_ms    |  8500ms  |  2100ms  | -3.2 [CRITICAL]
+direct_to_transfer       |  0.15    |  1.0     | +4.1 [CRITICAL]
+hand_stability_score     |  0.82    |  0.51    | -3.1 [CRITICAL]
+is_new_device            |  0       |  1       | CAT  [CRITICAL]
+exploratory_ratio        |  0.08    |  0.35    | +3.4 [CRITICAL]
 [...41 more features]
 ```
 
@@ -471,12 +424,10 @@ POST   /enroll/{user_id}
 
 SIM Swap
 ────────
-POST   /sim-swap/trigger
-       body: {user_id: int}
+POST   /sim-swap/trigger?user_id={user_id}
        returns: {event_id: str, triggered_at: str, is_active: bool}
 
-POST   /sim-swap/clear
-       body: {user_id: int}
+POST   /sim-swap/clear?user_id={user_id}
        returns: {cleared: bool}
 
 GET    /sim-swap/status/{user_id}
@@ -493,9 +444,8 @@ Scenarios
 GET    /scenarios/list
        returns: [{id, name, description, expected_score, expected_action}]
 
-POST   /scenarios/{scenario_id}/run
-       body: {user_id: int}
-       returns: {score_progression: list[int], final_score: int, action: str, detection_time_s: float}
+POST   /scenarios/{scenario_id}/run?user_id={user_id}
+       returns: {score_progression: list[int], final_score: int, action: str, top_anomalies: list[str]}
 
 Features
 ────────
@@ -595,27 +545,13 @@ Honest:   "We step up, not hard block — false positive cost is high here.
           The attacker cannot pass biometric re-auth. This is correct behavior."
 ```
 
-### Scenario 5 — Credential Stuffing + Fleet Anomaly (NEW)
+### Scenario 5 — Credential Stuffing + Fleet Anomaly
 ```
 Attack:   Professional fraud ring. Leaked credentials + SIM swap.
-          Same device tries 3 different accounts in 8 minutes.
-New:      fleet_anomaly detection — same device_fingerprint on ≥ 2 accounts
-          within 60 minutes → all associated accounts CRITICAL regardless of
-          individual behavior scores.
-Score:    22 | Detection: fires on 2nd account attempt | Action: ALL ACCOUNTS FROZEN
-Key:      "This is how fraud rings operate. Not one victim — many. Fleet detection
-          catches what per-session analysis misses."
-```
-
-### Scenario 6 — Pre-Auth SIM Probe (NEW — earliest detection)
-```
-Attack:   Attacker has SIM but not credentials yet. Probes via SMS banking/IVR
-          to identify which bank the victim uses. 3 balance queries in 2 minutes.
-Detection: Pre-auth telecom signal — no behavioral biometrics needed.
-           SIM swap + ≥3 service queries within 2 min = reconnaissance flag.
-Score:    — (pre-login) | Detection: before app opened | Action: EARLY WARNING
-Key:      "We catch the attack before the fraudster even opens the banking app.
-          No other system does this."
+          Same device tries different accounts in short succession.
+Key:      fleet_anomaly detection — same device_fingerprint on ≥ 2 accounts 
+          within 60 minutes.
+Score:    22 | Action: ALL ACCOUNTS FROZEN
 ```
 
 ---
@@ -742,14 +678,14 @@ Judges see: the "phone" on the big screen + your laptop showing real-time detect
 
 | Time | Action | Words |
 |---|---|---|
-| 0:00–1:00 | Show attack lifecycle slide | "₹500 fake Aadhaar. 4 minutes. Account empty. Every Indian bank detects this: never." |
+| 0:00–1:00 | Show attack lifecycle slide | "500 INR fake Aadhaar. 4 minutes. Account empty. Every Indian bank detects this: never." |
 | 1:00–2:30 | Click Enroll. Show baseline build. Score → 91 | "This is the behavioral fingerprint. Cannot be printed on a fake ID." |
 | 2:30–4:30 | Trigger SIM Swap. Start attacker session. Narrate each score drop | "74 — typing mismatch. 58 — navigation anomaly. 44 — new device. 27 — SIM fused. Blocked." |
 | 4:30–5:00 | Freeze modal. SMS arrives. Hold phone up | "28 seconds. No money moved." |
 | 5:00–5:45 | Show anomaly JSON | "Not a black box. Auditable. RBI can inspect exactly why we blocked it." |
-| 5:45–6:30 | Switch to Legacy tab. Same attacker. "Approved ❌" | "This is what every Indian bank has today." |
+| 5:45–6:30 | Switch to Legacy tab. Same attacker. "Approved NO" | "This is what every Indian bank has today." |
 | 6:30–7:00 | Run Bot scenario (Scenario 3) | "Bots are too perfect. 12 seconds." |
-| 7:00–8:00 | Metrics screen. Business case. Q&A | "94% detection. 2.1% false positives. ₹3/account/month. ₹24,000 Crore TAM." |
+| 7:00–8:00 | Metrics screen. Business case. Q&A | "94% detection. 2.1% false positives. 3 INR/account/month. 24,000 Crore TAM." |
 
 ---
 

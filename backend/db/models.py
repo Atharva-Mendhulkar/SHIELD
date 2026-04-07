@@ -46,6 +46,14 @@ class AlertLog(Base):
     recipient = Column(String)
     message = Column(String)
 
+class DeviceRegistry(Base):
+    __tablename__ = "device_registry"
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id"))
+    device_fingerprint = Column(String)
+    first_seen = Column(DateTime, default=datetime.datetime.utcnow)
+    last_seen = Column(DateTime, default=datetime.datetime.utcnow)
+
 # Database connection
 def get_db_path():
     db_dir = os.path.join(os.getcwd(), "backend", "db")

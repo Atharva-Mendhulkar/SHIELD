@@ -13,7 +13,7 @@ export const BankingApp: React.FC<BankingAppProps> = ({
   isAccountFrozen, 
   onLogout 
 }) => {
-  const [activeScreen, setActiveScreen] = useState<'LOGIN' | 'DASHBOARD' | 'TRANSFER' | 'OTP'>('LOGIN');
+  const [activeScreen, setActiveScreen] = useState<'LOGIN' | 'DASHBOARD' | 'TRANSFER' | 'OTP' | 'SUCCESS' | 'FAILURE'>('LOGIN');
   const [amount, setAmount] = useState('15000');
   const [beneficiary, setBeneficiary] = useState('Rajesh Sharma');
 
@@ -26,6 +26,15 @@ export const BankingApp: React.FC<BankingAppProps> = ({
     e.preventDefault();
     onTransactionStart();
     setActiveScreen('OTP');
+    
+    // Simulate OTP success after 3 seconds for demo
+    setTimeout(() => {
+      if (isAccountFrozen) {
+        setActiveScreen('FAILURE');
+      } else {
+        setActiveScreen('SUCCESS');
+      }
+    }, 4000);
   };
 
   if (isAccountFrozen) {
@@ -207,20 +216,66 @@ export const BankingApp: React.FC<BankingAppProps> = ({
                 <Shield className="text-amber-500 w-12 h-12" />
               </div>
               <h2 className="text-2xl font-bold">OTP Verification</h2>
-              <p className="text-slate-400 text-sm">Enter the 6-digit code sent to your registered mobile ending in •••• 9102</p>
+              <p className="text-slate-400 text-sm">Enter the 6-digit code sent to your registered mobile ending in •• 9102</p>
             </div>
 
             <div className="flex space-x-2">
               {[1, 2, 3, 4, 5, 6].map((i) => (
-                <div key={i} className="w-12 h-14 bg-slate-800 border border-slate-700 rounded-xl flex items-center justify-center text-xl font-bold animate-pulse">
+                <div key={i} className="w-10 h-12 bg-slate-800 border border-slate-700 rounded-lg flex items-center justify-center text-xl font-bold animate-pulse">
                    _
                 </div>
               ))}
             </div>
 
-            <div className="text-amber-500 text-xs font-bold uppercase tracking-widest animate-pulse">
+            <div className="text-amber-500 text-[10px] font-bold uppercase tracking-widest animate-pulse">
               Security scan in progress...
             </div>
+          </motion.div>
+        )}
+
+        {activeScreen === 'SUCCESS' && (
+          <motion.div 
+            key="success"
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="p-8 space-y-6 flex flex-col items-center justify-center flex-1"
+          >
+            <div className="bg-emerald-500/20 p-6 rounded-full">
+               <CheckCircle className="text-emerald-500 w-16 h-16" />
+            </div>
+            <div className="text-center">
+               <h2 className="text-2xl font-bold">Transfer Successful</h2>
+               <p className="text-slate-400 text-sm mt-2">₹{amount} sent to {beneficiary}.</p>
+            </div>
+            <button 
+              onClick={() => setActiveScreen('DASHBOARD')}
+              className="w-full bg-slate-800 hover:bg-slate-700 py-3 rounded-xl font-bold transition-all"
+            >
+              Back to Dashboard
+            </button>
+          </motion.div>
+        )}
+
+        {activeScreen === 'FAILURE' && (
+          <motion.div 
+            key="failure"
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="p-8 space-y-6 flex flex-col items-center justify-center flex-1"
+          >
+            <div className="bg-red-500/20 p-6 rounded-full">
+               <AlertTriangle className="text-red-500 w-16 h-16" />
+            </div>
+            <div className="text-center">
+               <h2 className="text-2xl font-bold text-red-500">Transaction Failed</h2>
+               <p className="text-slate-400 text-sm mt-2">Behavioral anomalies detected during sensitive operation.</p>
+            </div>
+            <button 
+              onClick={() => setActiveScreen('DASHBOARD')}
+              className="w-full bg-slate-800 hover:bg-slate-700 py-3 rounded-xl font-bold transition-all"
+            >
+              Return Home
+            </button>
           </motion.div>
         )}
       </AnimatePresence>
