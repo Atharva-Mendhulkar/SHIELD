@@ -13,9 +13,9 @@ interface ScoreDashboardProps {
 }
 
 const RISK_LEVELS: Record<string, { color: string, label: string, action: string }> = {
-  "LOW": { color: "text-emerald-500", label: "LOW RISK", action: "No intervention needed" },
-  "MEDIUM": { color: "text-amber-500", label: "MEDIUM RISK", action: "Step-up auth recommended" },
-  "HIGH": { color: "text-orange-500", label: "HIGH RISK", action: "Transaction pending review" },
+  "LOW": { color: "text-emerald-500", label: "LOW RISK", action: "[DONE] Allowed" },
+  "MEDIUM": { color: "text-amber-500", label: "MEDIUM RISK", action: "Step-Up Auth Required" },
+  "HIGH": { color: "text-orange-500", label: "HIGH RISK", action: "BLOCK" },
   "CRITICAL": { color: "text-red-500", label: "CRITICAL ALERT", action: "BLOCK + FREEZE ACTIVE" }
 };
 
@@ -41,7 +41,7 @@ export const ScoreDashboard: React.FC<ScoreDashboardProps> = ({
           </div>
           <div>
             <h2 className="text-2xl font-black uppercase tracking-tighter italic">Behavioral Identity Engine</h2>
-            <p className="text-slate-500 text-[10px] font-bold uppercase tracking-[0.2em]">Neural Network Analysis • Real-time</p>
+            <p className="text-slate-500 text-[10px] font-bold uppercase tracking-[0.2em]">ocSVM Analysis • Real-time</p>
           </div>
         </div>
         
@@ -89,7 +89,7 @@ export const ScoreDashboard: React.FC<ScoreDashboardProps> = ({
                Identity Persistence Trend <Info className="w-4 h-4 ml-2 opacity-30" />
             </div>
             <div className={`text-[10px] font-bold px-3 py-1 rounded-lg bg-white/5 border border-white/5 ${currentRisk.color}`}>
-              {Math.abs(score - (history[history.length-2]?.score || score))}pt variance
+              {Math.abs(score - (history[history.length-2]?.score || score))}pt variance -- CALIBRATED
             </div>
           </div>
           <div className="flex-1">
@@ -178,7 +178,7 @@ export const ScoreDashboard: React.FC<ScoreDashboardProps> = ({
               </div>
            </div>
            <p className="text-[10px] text-slate-500 italic mt-6 leading-relaxed">
-             "BehaviorShield leverages One-Class Support Vector Machines (ocSVM) to detect sub-second deviations in typing cadence and device handling stability."
+             "BehaviorShield leverages One-Class Support Vector Machines (ocSVM) to detect sub-second deviations in typing cadence and device handling stability -- Mapped to [0, 100] Confidence Score."
            </p>
         </div>
       </div>

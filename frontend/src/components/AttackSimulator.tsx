@@ -8,6 +8,7 @@ interface AttackSimulatorProps {
   onStartAttack: () => void;
   onReset: () => void;
   status: string;
+  currentStep: number;
 }
 
 export const AttackSimulator: React.FC<AttackSimulatorProps> = ({
@@ -16,7 +17,8 @@ export const AttackSimulator: React.FC<AttackSimulatorProps> = ({
   onTriggerSimSwap,
   onStartAttack,
   onReset,
-  status
+  status,
+  currentStep
 }) => {
   return (
     <div className="bg-slate-950 border border-slate-800 p-6 rounded-2xl flex flex-col space-y-4">
@@ -32,53 +34,57 @@ export const AttackSimulator: React.FC<AttackSimulatorProps> = ({
       <div className="grid grid-cols-1 gap-3">
         <button 
           onClick={onEnroll}
-          className="flex items-center space-x-3 p-3 bg-slate-800/50 hover:bg-slate-800 border border-slate-700/50 hover:border-emerald-500/30 rounded-xl transition-all group"
+          disabled={currentStep > 0}
+          className={`flex items-center space-x-3 p-3 bg-slate-800/50 hover:bg-slate-800 border border-slate-700/50 hover:border-emerald-500/30 rounded-xl transition-all group ${currentStep > 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
         >
           <div className="bg-slate-900 p-2 rounded-lg group-hover:bg-emerald-500/20 transition-colors">
             <UserCheck className="w-4 h-4 text-slate-400 group-hover:text-emerald-500" />
           </div>
           <div className="text-left">
-            <div className="text-xs font-bold">1. Enroll UserBaseline</div>
-            <div className="text-[10px] text-slate-500">Train One-Class SVM on 10 sessions</div>
+            <div className="text-xs font-bold">1. Enroll User</div>
+            <div className="text-[10px] text-slate-500">Train ocSVM on 10 baseline sessions</div>
           </div>
         </button>
 
         <button 
           onClick={onStartLegit}
-          className="flex items-center space-x-3 p-3 bg-slate-800/50 hover:bg-slate-800 border border-slate-700/50 hover:border-blue-500/30 rounded-xl transition-all group"
+          disabled={currentStep !== 1}
+          className={`flex items-center space-x-3 p-3 bg-slate-800/50 hover:bg-slate-800 border border-slate-700/50 hover:border-blue-500/30 rounded-xl transition-all group ${currentStep !== 1 ? 'opacity-50 cursor-not-allowed' : ''}`}
         >
           <div className="bg-slate-900 p-2 rounded-lg group-hover:bg-blue-500/20 transition-colors">
             <Play className="w-4 h-4 text-slate-400 group-hover:text-blue-500" />
           </div>
           <div className="text-left">
-            <div className="text-xs font-bold">2. Start Legit Session</div>
+            <div className="text-xs font-bold">2. Start Session</div>
             <div className="text-[10px] text-slate-500">Simulate typical user behavior</div>
           </div>
         </button>
 
         <button 
           onClick={onTriggerSimSwap}
-          className="flex items-center space-x-3 p-3 bg-red-500/5 hover:bg-red-500/10 border border-red-500/20 hover:border-red-500/50 rounded-xl transition-all group"
+          disabled={currentStep < 2}
+          className={`flex items-center space-x-3 p-3 bg-red-500/5 hover:bg-red-500/10 border border-red-500/20 hover:border-red-500/50 rounded-xl transition-all group ${currentStep < 2 ? 'opacity-50 cursor-not-allowed' : ''}`}
         >
           <div className="bg-slate-900 p-2 rounded-lg group-hover:bg-red-500/20 transition-colors">
             <Zap className="w-4 h-4 text-red-500/50 group-hover:text-red-500" />
           </div>
           <div className="text-left">
             <div className="text-xs font-bold text-red-500">3. TRIGGER SIM SWAP</div>
-            <div className="text-[10px] text-red-500/50">Fire external telecom alert</div>
+            <div className="text-[10px] text-red-500/50 italic">Fire external telecom alert</div>
           </div>
         </button>
 
         <button 
           onClick={onStartAttack}
-          className="flex items-center space-x-3 p-3 bg-orange-500/5 hover:bg-orange-500/10 border border-orange-500/20 hover:border-orange-500/50 rounded-xl transition-all group"
+          disabled={currentStep < 2}
+          className={`flex items-center space-x-3 p-3 bg-orange-500/5 hover:bg-orange-500/10 border border-orange-500/20 hover:border-orange-500/50 rounded-xl transition-all group ${currentStep < 2 ? 'opacity-50 cursor-not-allowed' : ''}`}
         >
           <div className="bg-slate-900 p-2 rounded-lg group-hover:bg-orange-500/20 transition-colors">
             <ShieldAlert className="w-4 h-4 text-orange-500/50 group-hover:text-orange-500" />
           </div>
           <div className="text-left">
             <div className="text-xs font-bold text-orange-500">4. Run Attack Protocol</div>
-            <div className="text-[10px] text-orange-500/50">Simulate behavioral drift across snapshots</div>
+            <div className="text-[10px] text-orange-500/50 italic">Simulate behavioral drift (47-features)</div>
           </div>
         </button>
 

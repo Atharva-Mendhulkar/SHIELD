@@ -31,7 +31,7 @@ export default function DashboardScreen({ onTransfer }: DashboardScreenProps) {
             <path d="M6 9l6 6 6-6" />
           </svg>
         </div>
-        <div className={styles.balance}>₹3,42,580.00</div>
+        <div className={styles.balance}>INR3,42,580.00</div>
         <div className={styles.accountNumber}>49 **** **** **** 4521</div>
 
         <div className={styles.actionButtons}>

@@ -18,6 +18,7 @@ export const SimulatorPage = () => {
   const [scenarios, setScenarios] = useState<ScenarioInfo[]>([]);
   const [selectedScenario, setSelectedScenario] = useState<string | null>(null);
   const [results, setResults] = useState<SimulationResult[]>([]);
+  const [currentStep, setCurrentStep] = useState(0); // 0: Enroll, 1: Start Legit, 2: Simulator Ready
   const userId = 1;
 
   useEffect(() => {
@@ -36,7 +37,8 @@ export const SimulatorPage = () => {
     setStatus('ENROLLING_USER_ATHARVA...');
     try {
       await axios.post(`${BACKEND_URL}/enroll/${userId}`);
-      setStatus('✓ USER_ENROLLED (10_SESSIONS)');
+      setStatus('[DONE] USER_ENROLLED (10_SESSIONS)');
+      setCurrentStep(1);
     } catch {
       setStatus('! ENROLLMENT_FAILED');
     }
@@ -49,7 +51,8 @@ export const SimulatorPage = () => {
         user_id: userId, 
         session_type: 'legitimate' 
       });
-      setStatus(`✓ SESSION_ACTIVE: ${res.data.session_id}`);
+      setStatus(`[DONE] SESSION_ACTIVE: ${res.data.session_id}`);
+      setCurrentStep(2);
     } catch {
       setStatus('! SESSION_INIT_FAILED');
     }
@@ -59,7 +62,7 @@ export const SimulatorPage = () => {
     setStatus('⚡ TRIGGERING_SIM_SWAP...');
     try {
       await axios.post(`${BACKEND_URL}/sim-swap/trigger?user_id=${userId}`);
-      setStatus('✓ SIM_SWAP_ACTIVE');
+      setStatus('[DONE] SIM_SWAP_ACTIVE');
     } catch {
       setStatus('! TRIGGER_FAILED');
     }
@@ -74,11 +77,11 @@ export const SimulatorPage = () => {
     setStatus(`RUNNING_SCENARIO: ${selectedScenario}...`);
     try {
       const res = await axios.post<ScenarioRunResponse>(`${BACKEND_URL}/scenarios/${selectedScenario}/run?user_id=${userId}`);
-      setStatus(`✓ SCENARIO_COMPLETE: ${res.data.action}`);
+      setStatus(`[DONE] SCENARIO_COMPLETE: ${res.data.action}`);
       setResults(prev => [
-        { scenario: selectedScenario, score: res.data.final_score, action: res.data.action, time: '28s' },
-        ...prev
-      ].slice(0, 5));
+        ...prev,
+        { scenario: selectedScenario, score: res.data.final_score, action: res.data.action, time: '28.2s' }
+      ].slice(-5));
     } catch {
       setStatus('! SCENARIO_EXEC_FAILED');
     }
@@ -124,6 +127,7 @@ export const SimulatorPage = () => {
              onStartAttack={handleStartAttack}
              onReset={handleReset}
              status={status}
+             currentStep={currentStep}
           />
           
           <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl">
@@ -198,13 +202,33 @@ export const SimulatorPage = () => {
                          <td className="py-4 px-2 text-slate-500">{r.time}</td>
                          <td className="py-4 px-2">
                            {r.score < 80 ? (
-                             <AlertTriangle className="w-4 h-4 text-amber-500" />
+                             <div className="bg-red-500/10 p-1 rounded border border-red-500/20">
+                                <AlertTriangle className="w-3 h-3 text-red-500" />
+                             </div>
                            ) : (
-                             <CheckCircle className="w-4 h-4 text-emerald-500" />
+                             <div className="bg-emerald-500/10 p-1 rounded border border-emerald-500/20">
+                                <CheckCircle className="w-3 h-3 text-emerald-500" />
+                             </div>
                            )}
                          </td>
                        </tr>
                      ))}
+                     {/* Legacy Constraint Row */}
+                     <tr className="text-slate-500 bg-slate-950/30">
+                       <td className="py-4 px-2 font-bold opacity-50 italic">Legacy Rule-Based</td>
+                       <td className="py-4 px-2 font-bold opacity-50">N/A</td>
+                       <td className="py-4 px-2">
+                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/10 text-emerald-500/50">
+                             APPROVED [FAIL]
+                          </span>
+                       </td>
+                       <td className="py-4 px-2 opacity-50 italic">N/A</td>
+                       <td className="py-4 px-2">
+                          <div className="bg-emerald-500/5 p-1 rounded border border-emerald-500/10 grayscale opacity-30">
+                             <CheckCircle className="w-3 h-3" />
+                          </div>
+                       </td>
+                     </tr>
                    </tbody>
                  </table>
                  

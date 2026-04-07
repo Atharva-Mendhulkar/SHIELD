@@ -23,7 +23,7 @@ export interface FleetCheckRequest {
 export interface FleetCheckResponse {
   fleet_anomaly: boolean;
   accounts_seen: number;
-  affected_users: number[];
+  flagged_accounts: number[];
   action: string;
 }
 

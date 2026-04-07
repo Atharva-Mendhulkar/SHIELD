@@ -128,7 +128,7 @@ export const BankingApp: React.FC<BankingAppProps> = ({
           >
             <div className="bg-gradient-to-br from-amber-500/10 to-slate-900 border border-amber-500/20 p-6 rounded-2xl">
               <div className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-2">Available Balance</div>
-              <div className="text-4xl font-bold">₹3,42,580<span className="text-slate-500 font-normal">.00</span></div>
+              <div className="text-4xl font-bold">INR3,42,580<span className="text-slate-500 font-normal">.00</span></div>
             </div>
 
             <div className="space-y-4">
@@ -138,9 +138,9 @@ export const BankingApp: React.FC<BankingAppProps> = ({
               </div>
               <div className="space-y-3">
                 {[
-                  { desc: 'Swiggy Food', amt: '-₹450', color: 'text-red-400' },
-                  { desc: 'Salary Credit', amt: '+₹85,000', color: 'text-emerald-400' },
-                  { desc: 'Netflix Subscription', amt: '-₹799', color: 'text-red-400' }
+                  { desc: 'Swiggy Food', amt: '-INR450', color: 'text-red-400' },
+                  { desc: 'Salary Credit', amt: '+INR85,000', color: 'text-emerald-400' },
+                  { desc: 'Netflix Subscription', amt: '-INR799', color: 'text-red-400' }
                 ].map((t, i) => (
                   <div key={i} className="flex items-center justify-between p-3 bg-slate-800/50 rounded-xl border border-slate-800">
                     <span className="text-sm">{t.desc}</span>
@@ -185,7 +185,7 @@ export const BankingApp: React.FC<BankingAppProps> = ({
             <div className="space-y-2">
               <label className="text-sm font-medium text-slate-300">Amount (INR)</label>
               <div className="relative">
-                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 font-bold">₹</span>
+                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 font-bold text-xs">INR</span>
                 <input 
                   type="number" 
                   className="w-full bg-slate-800 border border-slate-700 rounded-xl pl-10 pr-4 py-3 focus:outline-none text-2xl font-bold" 
@@ -245,7 +245,7 @@ export const BankingApp: React.FC<BankingAppProps> = ({
             </div>
             <div className="text-center">
                <h2 className="text-2xl font-bold">Transfer Successful</h2>
-               <p className="text-slate-400 text-sm mt-2">₹{amount} sent to {beneficiary}.</p>
+               <p className="text-slate-400 text-sm mt-2">INR{amount} sent to {beneficiary}.</p>
             </div>
             <button 
               onClick={() => setActiveScreen('DASHBOARD')}

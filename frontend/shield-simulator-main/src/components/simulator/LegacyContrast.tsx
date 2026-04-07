@@ -30,10 +30,10 @@ export default function LegacyContrast({ visible, score }: LegacyContrastProps) 
           Behavioral Score: <span className="text-foreground font-mono font-bold">{score}</span>/100
         </div>
         <div className="mt-3 text-xs text-muted-foreground font-mono space-y-1">
-          <div>• Device fingerprint mismatch <span className="text-shield-red">✗</span></div>
-          <div>• SIM ICCID changed <span className="text-shield-red">✗</span></div>
-          <div>• Typing pattern anomaly <span className="text-shield-red">✗</span></div>
-          <div>• Location deviation 12.4km <span className="text-shield-red">✗</span></div>
+          <div>• Device fingerprint mismatch <span className="text-shield-red">[FAIL]</span></div>
+          <div>• SIM ICCID changed <span className="text-shield-red">[FAIL]</span></div>
+          <div>• Typing pattern anomaly <span className="text-shield-red">[FAIL]</span></div>
+          <div>• Location deviation 12.4km <span className="text-shield-red">[FAIL]</span></div>
         </div>
       </div>
 
@@ -52,11 +52,11 @@ export default function LegacyContrast({ visible, score }: LegacyContrastProps) 
           All rule checks passed
         </div>
         <div className="text-xs font-mono space-y-1.5 text-muted-foreground">
-          <div>Amount {'>'} ₹50,000? <span className="text-shield-green">No ✓</span></div>
-          <div>Time {'>'} 11PM? <span className="text-shield-green">No ✓</span></div>
-          <div>Location anomaly? <span className="text-shield-green">No ✓</span></div>
+          <div>Amount {'>'} INR50,000? <span className="text-shield-green">No [DONE]</span></div>
+          <div>Time {'>'} 11PM? <span className="text-shield-green">No [DONE]</span></div>
+          <div>Location anomaly? <span className="text-shield-green">No [DONE]</span></div>
           <div className="pt-2 text-shield-red font-bold text-sm">
-            Result: APPROVED — ₹15,000 sent to attacker
+            Result: APPROVED [FAIL] -- INR15,000 sent to attacker
           </div>
         </div>
       </div>

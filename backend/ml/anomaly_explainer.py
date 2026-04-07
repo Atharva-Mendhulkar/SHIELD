@@ -11,14 +11,15 @@ Z_SCORE_FLAG_THRESHOLD = 2.5
 ANOMALY_TEMPLATES = {
     "inter_key_delay_mean":    "Typing speed {direction} {pct}% from baseline",
     "time_to_submit_otp_ms":   "OTP submitted {pct}% {direction} than user average",
-    "direct_to_transfer":      "Went directly to transfer — atypical navigation pattern",
-    "is_new_device":           "Device fingerprint unknown — never seen for this account",
+    "direct_to_transfer":      "Went directly to transfer -- atypical navigation pattern",
+    "is_new_device":           "Device fingerprint unknown -- never seen for this account",
     "exploratory_ratio":       "Navigation {pct}% more exploratory than normal",
     "hand_stability_score":    "Device motion stability {pct}% below baseline",
     "session_duration_ms":     "Session {pct}% {direction} than user average",
-    "click_speed_std":         "Interaction timing variance {direction} — possible automation",
-    "swipe_velocity_mean":     "Touch behavior absent — possible non-mobile device",
+    "click_speed_std":         "Interaction timing variance {direction} -- possible automation",
+    "swipe_velocity_mean":     "Touch behavior absent -- possible non-mobile device",
     "form_field_order_entropy":"Form completion order atypical",
+<<<<<<< HEAD
     "time_of_day_hour":        "Login at {hour}:00 — outside user's typical hours",
     "typing_burst_count":      "Typing pattern: single unbroken burst — possible automation",
     "error_rate":              "Zero typing errors — possible automated input",
@@ -28,6 +29,11 @@ ANOMALY_TEMPLATES = {
     "mouse_movement_entropy":  "Mouse movement entropy {direction} — possible bot or scripted input",
     "mouse_speed_cv":          "Mouse speed variation {direction} baseline — possible automation",
     "scroll_wheel_event_count":"Scroll wheel count {direction} expected range for device type",
+=======
+    "time_of_day_hour":        "Login at {hour}:00 -- outside user's typical hours",
+    "typing_burst_count":      "Typing pattern: single unbroken burst -- possible automation",
+    "error_rate":              "Zero typing errors -- possible automated input",
+>>>>>>> 3c7648e (refactor: standardize UI labels, update simulator workflow, and improve anomaly explanation formatting)
 }
 
 
