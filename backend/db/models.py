@@ -20,6 +20,7 @@ class Session(Base):
     started_at = Column(DateTime, default=datetime.datetime.utcnow)
     session_type = Column(String)   # 'legitimate' | 'attacker'
     device_class = Column(String, default="mobile")  # 'mobile' | 'desktop' | 'tablet'
+    completed = Column(Boolean, default=False)
     feature_vector_json = Column(JSON)
 
 class Score(Base):
@@ -29,6 +30,7 @@ class Score(Base):
     computed_at = Column(DateTime, default=datetime.datetime.utcnow)
     confidence_score = Column(Integer)
     risk_level = Column(String)
+    action = Column(String)          # ALLOW | STEP_UP_AUTH | BLOCK_TRANSACTION | BLOCK_AND_FREEZE
     top_anomalies_json = Column(JSON)
 
 class SimSwapEvent(Base):
@@ -46,6 +48,7 @@ class AlertLog(Base):
     sent_at = Column(DateTime, default=datetime.datetime.utcnow)
     recipient = Column(String)
     message = Column(String)
+    message_sid = Column(String)     # Twilio SID if SMS
 
 class DeviceRegistry(Base):
     __tablename__ = "device_registry"

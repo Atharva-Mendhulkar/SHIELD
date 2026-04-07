@@ -4,24 +4,35 @@ import datetime
 from backend.db.models import SessionLocal, Session
 from backend.ml.feature_schema import FEATURE_NAMES
 
+FEATURE_DIM = len(FEATURE_NAMES)  # 55
+
 ATTACKER_PROFILE = {
-    "inter_key_delay_mean": (310, 60),     
-    "inter_key_delay_std": (90, 20),       
+    "inter_key_delay_mean": (310, 60),
+    "inter_key_delay_std": (90, 20),
     "dwell_time_mean": (140, 30),
-    "swipe_velocity_mean": (280, 80),      
-    "session_duration_ms": (95000, 10000), 
-    "time_of_day_hour": [2, 3],            
-    "direct_to_transfer": 1,               
-    "exploratory_ratio": (0.35, 0.08),     
-    "is_new_device": 1,                    
-    "hand_stability_score": (0.51, 0.1),   
-    "time_to_submit_otp_ms": (2100, 300),  
+    "swipe_velocity_mean": (280, 80),
+    "session_duration_ms": (95000, 10000),
+    "time_of_day_hour": [2, 3],
+    "direct_to_transfer": 1,
+    "exploratory_ratio": (0.35, 0.08),
+    "is_new_device": 1,
+    "hand_stability_score": (0.51, 0.1),
+    "time_to_submit_otp_ms": (2100, 300),
+    # Device Trust Context -- unknown device
+    "device_class_known": 0,
+    "device_session_count": 0,
+    "device_class_switch": 1,
+    "is_known_fingerprint": 0,
+    "time_since_last_seen_hours": 0,
+    # Desktop Mouse -- zeros (attacker on mobile)
+    "mouse_movement_entropy": 0.0,
+    "mouse_speed_cv": 0.0,
+    "scroll_wheel_event_count": 0,
 }
 
 def generate_attacker_session(user_id: int):
     features = {}
-    
-    # Randomly pick from profile
+
     for key, val in ATTACKER_PROFILE.items():
         if isinstance(val, tuple):
             features[key] = np.random.normal(val[0], val[1])
@@ -30,35 +41,36 @@ def generate_attacker_session(user_id: int):
         else:
             features[key] = val
 
-    # Fill remaining 47 features with defaults/random variance
+    # Fill remaining with attacker-like defaults
     for name in FEATURE_NAMES:
         if name not in features:
             if "std" in name:
-                features[name] = np.random.uniform(20, 50)  # higher variance for attackers
+                features[name] = np.random.uniform(20, 50)
             elif "mean" in name:
-                features[name] = np.random.uniform(300, 500) # slower responses for attackers
+                features[name] = np.random.uniform(300, 500)
             elif "count" in name:
-                features[name] = np.random.randint(5, 15)  # more interactions (exploratory)
+                features[name] = np.random.randint(5, 15)
             else:
                 features[name] = 0.0
 
-    # Ensure binary features are correct
+    # Binary features
     features["is_new_device"] = 1
     features["timezone_changed"] = 1
     features["os_version_changed"] = 0
-    
-    # Navigation depth
+
+    # Navigation
     features["navigation_depth_max"] = np.random.randint(2, 4)
     features["screens_visited_count"] = features["navigation_depth_max"] + np.random.randint(1, 4)
 
-    # Reorder to match FEATURE_NAMES and cast to float
+    # Build 55-dim vector
     vector = [float(features.get(name, 0.0)) for name in FEATURE_NAMES]
-    
+
     return Session(
         id=str(uuid.uuid4()),
         user_id=user_id,
         started_at=datetime.datetime.utcnow(),
         session_type='attacker',
+        device_class='mobile',
         feature_vector_json=vector
     )
 

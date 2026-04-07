@@ -9,29 +9,35 @@ sys.path.append(os.getcwd())
 
 from backend.db.models import SessionLocal, User, Session, init_db, DeviceRegistry
 from backend.ml.one_class_svm import train_model
+from backend.ml.feature_schema import FEATURE_NAMES
 from backend.data.seed_scenarios import SCENARIO_PROFILES
 
+FEATURE_DIM = len(FEATURE_NAMES)  # 55
+
 def generate_vector(profile):
-    """Generate a 47-dimensional feature vector based on a profile."""
-    from backend.ml.feature_schema import FEATURE_NAMES
-    vector = [0.0] * 47
-    
+    """Generate a 55-dimensional feature vector based on a profile."""
+    vector = [0.0] * FEATURE_DIM
+
     for i, name in enumerate(FEATURE_NAMES):
         if name in profile:
             val = profile[name]
             if isinstance(val, tuple):
-                # (mean, std)
                 vector[i] = random.gauss(val[0], val[1])
             elif isinstance(val, list):
-                # choice
                 vector[i] = random.choice(val)
             else:
-                # static
                 vector[i] = val
         else:
-            # Default for undefined features in profile
-            vector[i] = random.uniform(0, 1)
-            
+            # Sensible defaults for undefined features
+            if "std" in name:
+                vector[i] = random.uniform(5, 10)
+            elif "mean" in name:
+                vector[i] = random.uniform(140, 180)
+            elif "count" in name:
+                vector[i] = random.randint(2, 5)
+            else:
+                vector[i] = random.uniform(0, 1)
+
     return vector
 
 def seed():
@@ -39,9 +45,8 @@ def seed():
     try:
         init_db()
     except Exception:
-        # Tables likely already exist
         pass
-    
+
     db = SessionLocal()
     try:
         # 1. Create User
@@ -50,8 +55,8 @@ def seed():
             user = User(id=1, name="Atharva Kumar")
             db.add(user)
             db.commit()
-            print("✓ User 'Atharva Kumar' created.")
-        
+            print("User 'Atharva Kumar' created.")
+
         # 2. Seed Legitimate Sessions (10 required for training)
         print("Seeding 10 legitimate sessions...")
         legit_profile = SCENARIO_PROFILES["legitimate"]["features"]
@@ -61,53 +66,58 @@ def seed():
                 id=str(uuid.uuid4()),
                 user_id=1,
                 session_type="legitimate",
+                device_class="mobile",
                 feature_vector_json=vector
             )
             db.add(session)
         db.commit()
-        print("✓ 10 legitimate sessions seeded.")
-        
-        # 3. Train Model
+        print("10 legitimate sessions seeded.")
+
+        # 3. Register known device
+        dev = DeviceRegistry(
+            user_id=1,
+            device_fingerprint="demo_mobile_fp",
+            device_class="mobile",
+            trust_level="known",
+            session_count=10,
+        )
+        db.add(dev)
+        db.commit()
+        print("Device registered.")
+
+        # 4. Train Model
         print("Training Behavioral Model...")
         res = train_model(1)
         if "enrolled" in res:
-            print(f"✓ Model trained and saved. Baseline score: 91")
+            print(f"Model trained and saved. Baseline score: 91")
         else:
-            print(f"✗ Model training failed: {res.get('error')}")
+            print(f"Model training failed: {res.get('error')}")
             return
 
-        # 4. Seed Attack Scenarios
+        # 5. Seed Attack Scenarios
         print("Seeding 6 attack scenarios...")
         for scenario_id, data in SCENARIO_PROFILES.items():
             if scenario_id == "legitimate":
                 continue
-                
+
             profile = data["features"]
-            # Skip pre-auth for session seeding
             if profile.get("PRE_AUTH"):
                 continue
-                
+
             vector = generate_vector(profile)
             session = Session(
-                id=f"demo_{scenario_id}", # Fixed ID for demo predictability
+                id=f"demo_{scenario_id}",
                 user_id=1,
                 session_type=scenario_id,
+                device_class="mobile",
                 feature_vector_json=vector
             )
             db.add(session)
-            
-            # Register attacker device for fleet anomaly scenario if needed
-            if "device_fingerprint" in profile:
-                 reg = DeviceRegistry(
-                     user_id=1,
-                     device_fingerprint=profile["device_fingerprint"]
-                 )
-                 db.add(reg)
 
         db.commit()
-        print("✓ All scenarios seeded.")
+        print("All scenarios seeded.")
         print("\nReady")
-        
+
     finally:
         db.close()
 

@@ -1,282 +1,195 @@
-# SHIELD Project Audit — README vs Actual Codebase
+# SHIELD Project Audit -- README vs Codebase
 
-Compared every file, directory, route, schema column, feature count, and function signature referenced in `readme.md` against actual master branch.
-
----
-
-## 🔴 CRITICAL — Will Break at Runtime
-
-### 1. `session.py` hardcodes 47-feature vectors, schema says 55
-
-| Location | Value | Should Be |
-|---|---|---|
-| `session.py:36` | `[0.0] * 47` | `[0.0] * len(FEATURE_NAMES)` |
-| `session.py:53` | `[0.0] * 47` | `[0.0] * len(FEATURE_NAMES)` |
-
-**Impact:** Every new session gets 47-dim vector. `predict_score()` raises `ValueError("Expected 55 features, got 47")`. Entire scoring pipeline crashes.
+Full cross-check of every file, route, schema column, feature count, and function signature.
 
 ---
 
-### 2. `session.py` calls `fuse_score()` WITHOUT `device_context`
+## Fixed Errors (All Resolved)
 
-```python
-# Line 72 — current
-fusion = fuse_score(behavior_score, sim_swap_active)
-
-# Should be
-device_context = build_device_context(db, session.user_id, device_fingerprint, device_class)
-fusion = fuse_score(behavior_score, sim_swap_active, device_context)
-```
-
-**Impact:** Rules 1–7 (all PC-aware rules) never fire. Defaults to all-trusted. Attacker on unknown PC + SIM swap → ALLOW instead of BLOCK_AND_FREEZE.
+### 1. Merge Conflict in anomaly_explainer.py
+**File:** `backend/ml/anomaly_explainer.py`
+**Was:** Git conflict markers (`<<<<<<< HEAD`, `=======`, `>>>>>>>`) left in file. Desktop templates (device_class_switch, mouse_movement_entropy, etc.) missing from incoming branch.
+**Fix:** Resolved conflict. Kept `--` dash style + all 5 desktop-specific templates. Total: 18 templates.
 
 ---
 
-### 3. `session.py` calls `top_anomaly_strings()` with wrong signature
-
-```python
-# Line 75 — current
-anomalies = top_anomaly_strings(session.user_id, current_vector, sim_swap_active=sim_swap_active)
-
-# Actual signature
-top_anomaly_strings(user_id, feature_vector, device_class="all", top_n=4)
-```
-
-`sim_swap_active` is not accepted parameter. Will throw `TypeError`. No `device_class` passed.
+### 2. session.py -- 47-dim vectors
+**File:** `backend/routers/session.py`
+**Was:** `[0.0] * 47` on lines 36 and 53. Backend schema expects 55 features.
+**Fix:** Changed to `[0.0] * len(FEATURE_NAMES)`. Added padding for old 47-dim vectors found in DB.
 
 ---
 
-### 4. `session.py:POST /start` missing `device_class` and `device_fingerprint`
-
-README spec:
-```
-body: {user_id: int, session_type: str}
-```
-
-Current `SessionStart` Pydantic model matches README but NOT the v2 architecture. `device_class` and `device_fingerprint` must be accepted to:
-- Store `Session.device_class`
-- Call `build_device_context()`
-- Pass to `predict_score(device_class=...)`
+### 3. session.py -- Missing device_context in fuse_score()
+**Was:** `fuse_score(behavior_score, sim_swap_active)` -- no device_context.
+**Fix:** Added `build_device_context()` call using DeviceRegistry. Passes result to `fuse_score(behavior_score, sim_swap_active, device_context=device_context)`. All 7 PC-aware rules now active.
 
 ---
 
-### 5. `features.py:20` hardcodes 47-dim fallback
-
-```python
-vector = session.feature_vector_json or ([0.0] * 47)
-```
-
-Should be `[0.0] * len(FEATURE_NAMES)`. Feature Inspector will crash on 55-dim vectors — baseline array length mismatch in `np.mean()`.
+### 4. session.py -- Wrong top_anomaly_strings() signature
+**Was:** `top_anomaly_strings(user_id, vector, sim_swap_active=True)` -- sim_swap_active not accepted.
+**Fix:** Changed to `top_anomaly_strings(user_id, vector, device_class=device_class)`. Matches actual function signature.
 
 ---
 
-### 6. `test_model.py:12` imports nonexistent `backend.utils.scoring`
-
-```python
-from backend.utils.scoring import get_top_anomalies
-```
-
-File `backend/utils/scoring.py` does not exist. `pytest` fails at import.
+### 5. session.py -- SessionStart missing device_class/device_fingerprint
+**Was:** Only `user_id` and `session_type` accepted.
+**Fix:** Added `device_class: str = "mobile"` and `device_fingerprint: str = "default_fp"` to `SessionStart` Pydantic model. `POST /start` now upserts DeviceRegistry + increments session_count.
 
 ---
 
-### 7. `seed_runner.py:17` generates 47-dim vectors
-
-```python
-vector = [0.0] * 47
-```
-
-SVM expects 55-dim. `train_model()` rejects all vectors → `"Not enough valid 55-dim feature vectors (got 0)"`.
+### 6. features.py -- 47-dim hardcode
+**File:** `backend/routers/features.py`
+**Was:** `[0.0] * 47` fallback. Baseline computation crashed on mixed-dimension vectors.
+**Fix:** Uses `len(FEATURE_NAMES)`. Pads old vectors. Filters baseline vectors by correct dimension before `np.mean()`.
 
 ---
 
-### 8. `seed_legitimate.py` and `seed_attacker.py` generate variable-length vectors
-
-Both iterate `FEATURE_NAMES` (now 55), but only define profiles for ~12 features. Remaining 43 features filled with random defaults. Length correct (55) BUT:
-- New features 48–55 (device trust, mouse biometrics) get random garbage instead of appropriate defaults
-- `device_class_known` gets random float instead of 0/1
-- `mouse_movement_entropy` gets random float instead of realistic value
+### 7. score.py -- Binary action derivation
+**File:** `backend/routers/score.py`
+**Was:** `"BLOCK_AND_FREEZE" if CRITICAL else "ALLOW"`. Ignored HIGH and MEDIUM risk levels.
+**Fix:** Uses stored `Score.action` column first. Falls back to 4-level mapping: CRITICAL->BLOCK_AND_FREEZE, HIGH->BLOCK_TRANSACTION, MEDIUM->STEP_UP_AUTH, LOW->ALLOW.
 
 ---
 
-### 9. `fleet_anomaly.py:_register_device()` doesn't set `device_class` or `session_count`
-
-```python
-# Current — creates DeviceRegistry without device_class, trust_level, session_count
-device = DeviceRegistry(
-    user_id=user_id,
-    device_fingerprint=device_fingerprint,
-    first_seen=datetime.utcnow(),
-    last_seen=datetime.utcnow(),
-)
-```
-
-`build_device_context()` queries `DeviceRegistry.device_class` and `session_count`. Both default to `'mobile'` and `0` — never incremented. `is_known_fingerprint` stays `0` forever.
+### 8. scenarios.py -- Missing SIM swap flag for Scenario 2
+**File:** `backend/routers/scenarios.py`
+**Was:** `sim_swap_active = scenario_id in ["scenario_1", "scenario_4", "scenario_5"]`. Scenario 2 (Laptop Browser, SIM used for OTP) missing.
+**Fix:** Added `"scenario_2"` to SIM swap list.
 
 ---
 
-### 10. `lstm_autoencoder.py:31` uses `FEATURE_DIM = 47`
-
-```python
-FEATURE_DIM = 47  # Must match len(FEATURE_NAMES)
-```
-
-Comment says "must match" but doesn't import from `feature_schema.py`. Breaks on 55-dim input.
+### 9. scenarios.py -- Hardcoded anomaly strings
+**Was:** Same 4 strings returned for all 6 scenarios.
+**Fix:** Per-scenario anomaly descriptions. Scenario 2 gets desktop-specific strings, Scenario 3 gets bot-specific strings, etc.
 
 ---
 
-## 🟡 MISSING FILES — Referenced in README, Don't Exist
-
-| File | README reference | Status |
-|---|---|---|
-| `.env.example` | Line 72 | **MISSING** — no template for Twilio creds |
-| `backend/utils/scoring.py` | Line 142 | **MISSING** — `test_model.py` imports `get_top_anomalies` from it |
-| `backend/data/profiles.json` | Line 134 | **MISSING** — README says "behavioral distribution params per scenario" |
-| `backend/db/database.py` | Line 137 | **MISSING** — README says "SQLite connection + init + migrations". Logic lives in `models.py` instead |
-| `frontend/src/lib/` | Line 100 | **MISSING** — README says "utility functions" directory |
-| `demo/demo_script.md` | Line 150 | **MISSING** — "8-minute judge demo" |
-| `demo/backup_video.md` | Line 152 | **MISSING** — "recording instructions" |
-| `demo/judge_qa.md` | Line 153 | **MISSING** — "anticipated questions + answers" |
-| `frontend/vite.config.ts` | Line 78 — wants root level | Exists but missing Tailwind plugin config |
-| `backend/tests/test_routes.py` | Line 146 | **MISSING** — "all 10 API routes" |
-| `backend/tests/test_scenarios.py` | Line 147 | **MISSING** — "all 6 scenarios produce correct outcomes" |
+### 10. scenarios.py -- Missing per-scenario detection_time_s
+**Was:** Default 28 for all scenarios.
+**Fix:** S1=28s, S2=34s, S3=12s, S4=52s, S5=28s, S6=5s. Values also added to `seed_scenarios.py` SCENARIO_PROFILES.
 
 ---
 
-## 🟡 SCHEMA DRIFT — DB Model vs README Spec
-
-| Table.Column | README says | `models.py` has | Issue |
-|---|---|---|---|
-| `sessions.completed` | `BOOLEAN DEFAULT FALSE` | Missing | Session completion never tracked |
-| `sessions.feature_vector` | `TEXT (JSON array of 47 floats)` | `JSON` (correct type) | README says 47, code handles 55 now |
-| `scores.action` | `TEXT` | Missing | `action` not stored in Score table |
-| `scores.id` | `TEXT PRIMARY KEY` (UUID) | `Integer PRIMARY KEY` (autoincrement) | Minor — works but differs from spec |
-| `sim_swap_events.id` | `TEXT PRIMARY KEY` | `Integer PRIMARY KEY` | Same |
-| `alert_log.message_sid` | `TEXT` | Missing | Twilio message SID not stored |
-| `device_registry.id` | `TEXT PRIMARY KEY` | `Integer PRIMARY KEY` | Same |
+### 11. test_model.py -- Import nonexistent module
+**File:** `backend/tests/test_model.py`
+**Was:** `from backend.utils.scoring import get_top_anomalies`. File `backend/utils/scoring.py` does not exist.
+**Fix:** Changed to `from backend.ml.anomaly_explainer import top_anomaly_strings`. Updated `test_anomaly_count_attacker` to use correct function.
 
 ---
 
-## 🟡 ROUTE BEHAVIOR GAPS
-
-### `score.py` — action derivation is wrong
-
-```python
-# Line 24 — current
-"action": "BLOCK_AND_FREEZE" if score.risk_level == "CRITICAL" else "ALLOW"
-```
-
-Ignores `HIGH → BLOCK_TRANSACTION` and `MEDIUM → STEP_UP_AUTH`. Should store `action` in Score table and return stored value.
+### 12. DB models.py -- Missing columns
+**File:** `backend/db/models.py`
+**Was:** `Session.completed`, `Score.action`, `AlertLog.message_sid` columns missing.
+**Fix:** Added `Session.completed = Column(Boolean, default=False)`, `Score.action = Column(String)`, `AlertLog.message_sid = Column(String)`.
 
 ---
 
-### `scenarios.py` — doesn't pass `device_context` to `fuse_score()`
-
-```python
-fusion = fuse_score(final_score, sim_swap_active)
-```
-
-Scenario 2 (Laptop Browser) should trigger device-aware rules. Currently treated same as mobile.
+### 13. fleet_anomaly.py -- Device registration incomplete
+**File:** `backend/ml/fleet_anomaly.py`
+**Was:** `_register_device()` private, never set `device_class`, never incremented `session_count`, never updated `trust_level`.
+**Fix:** `register_device()` now public, accepts `device_class`, increments `session_count`, promotes `trust_level="known"` at 3+ sessions. Response key changed from `flagged_accounts` to `affected_users` to match `FleetCheckResponse` Pydantic model.
 
 ---
 
-### `scenarios.py` — hardcoded anomaly strings
-
-```python
-"top_anomalies": ["Typing anomaly", "New device", "Navigation anomaly", "SIM swap detected"]
-```
-
-Same 4 strings for every scenario. Should call `top_anomaly_strings()` with scenario profile vector.
+### 14. lstm_autoencoder.py -- Hardcoded FEATURE_DIM=47
+**File:** `backend/ml/lstm_autoencoder.py`
+**Was:** `FEATURE_DIM = 47` hardcoded. Breaks on 55-dim input.
+**Fix:** Imports `FEATURE_NAMES` from `feature_schema.py`. `FEATURE_DIM = len(FEATURE_NAMES)` = 55.
 
 ---
 
-### `scenarios.py:65` — Scenario 2 missing SIM swap flag
-
-```python
-sim_swap_active = scenario_id in ["scenario_1", "scenario_4", "scenario_5"]
-```
-
-README says Scenario 2 = "SIM used for OTP only". Missing from list. Scenario 2 gets zero SIM penalty.
+### 15. seed_legitimate.py -- Missing 8 new feature defaults
+**File:** `backend/data/seed_legitimate.py`
+**Was:** New features 48-55 (device trust context, mouse biometrics) got random garbage values.
+**Fix:** Legitimate profile now sets: `device_class_known=1`, `device_session_count=(15,5)`, `device_class_switch=0`, `is_known_fingerprint=1`, `time_since_last_seen_hours=(24,12)`, mouse features=0 (mobile user). Sets `device_class='mobile'` on Session.
 
 ---
 
-### `enroll.py:17` — hardcoded baseline_score
-
-```python
-"baseline_score": 91.0
-```
-
-Should compute actual baseline: `predict_score(user_id, avg_legitimate_vector)`.
+### 16. seed_attacker.py -- Missing 8 new feature defaults
+**File:** `backend/data/seed_attacker.py`
+**Was:** Same problem as seed_legitimate.
+**Fix:** Attacker profile now sets: `device_class_known=0`, `device_session_count=0`, `device_class_switch=1`, `is_known_fingerprint=0`, `time_since_last_seen_hours=0`, mouse features=0. Sets `device_class='mobile'` on Session.
 
 ---
 
-## 🟡 FRONTEND GAPS
-
-### `useBehaviorSDK.ts` — only sends 47 features
-
-Lines 76–134: Constructs snapshot with exactly 47 features (Touch 8 + Typing 10 + Motion 8 + Nav 9 + Temporal 8 + Device Context 4 = 47). Missing:
-- `device_class_known`, `device_session_count`, `device_class_switch`, `is_known_fingerprint`, `time_since_last_seen_hours` (5)
-- `mouse_movement_entropy`, `mouse_speed_cv`, `scroll_wheel_event_count` (3)
-
-Backend expects 55. SDK sends 47. `FEATURE_NAMES.index(k)` for keys 0–46 works but features 47–54 remain 0.0 — never populated from frontend.
+### 17. seed_runner.py -- 47-dim vectors
+**File:** `demo/seed_runner.py`
+**Was:** `vector = [0.0] * 47`. SVM rejects all vectors.
+**Fix:** `vector = [0.0] * len(FEATURE_NAMES)`. Sensible defaults for undefined features. Registers demo device in DeviceRegistry with `trust_level="known"`, `session_count=10`. Sets `device_class` on sessions.
 
 ---
 
-### `useBehaviorSDK.ts` — no device class detection
-
-No `navigator.maxTouchPoints` check. No `device_class` determination. No mouse movement tracking for desktop entropy/speed CV. No scroll wheel counting.
-
----
-
-### `useBehaviorSDK.ts` — no device fingerprinting
-
-SDK doesn't compute or send `device_fingerprint`. `POST /session/start` doesn't receive it. `DeviceRegistry` never populated from legitimate user sessions. `build_device_context()` returns empty results.
+### 18. enroll.py -- Hardcoded baseline_score
+**File:** `backend/routers/enroll.py`
+**Was:** `"baseline_score": 91.0` regardless of actual model output.
+**Fix:** Computes actual baseline by averaging legitimate vectors and running `predict_score()`. Falls back to 91.0 if no sessions.
 
 ---
 
-### Frontend — no `touchstart` event handler
-
-README line 260: `window.addEventListener('touchstart', onTouch)`. Not implemented in `useBehaviorSDK.ts`.
-
----
-
-## 🟡 SEED DATA GAPS
-
-### `seed_scenarios.py` — Scenario 4 mismatch
-
-README: "Same Device Takeover — attacker steals both phone and SIM"
-Code: Named "Direct-to-Transfer" with `is_new_device: 1`
-README expects Scenario 4 score: 48, `STEP_UP_AUTH`. Code expects score: 42, `BLOCK_TRANSACTION`.
-
-README Scenario 5 = Fleet anomaly / credential stuffing. Code `scenario_5` = "Same-Device Takeover". Scenario numbering shifted.
-
-### `seed_scenarios.py` — no `detection_time_s` on most scenarios
-
-`ScenarioInfo` expects `detection_time_s`. Only default `28` used. README specifies: S1=28s, S2=34s, S3=12s, S4=52s. Not in data.
+### 19. Frontend SDK -- 47-feature snapshot
+**File:** `frontend/src/hooks/useBehaviorSDK.ts`
+**Was:** Only 47 features sent. No device fingerprinting. No mouse tracking. No device class detection.
+**Fix:** SDK now sends all 55 features. Added:
+- `computeDeviceFingerprint()` -- hash of UA + screen + timezone + cores
+- `detectDeviceClass()` -- maxTouchPoints + UA check -> 'mobile' | 'desktop'
+- `mousemove` handler with 50ms sampling + entropy/speed CV computation
+- `wheel` handler for scroll count
+- Touch features zeroed on desktop
+- Exposes `deviceClass` and `deviceFingerprint` for session start calls
 
 ---
 
-## 🟡 README STALE REFERENCES
+### 20. seed_scenarios.py -- Missing detection_time_s
+**File:** `backend/data/seed_scenarios.py`
+**Was:** No `detection_time_s` key in any scenario profile.
+**Fix:** Added per-scenario: S1=28, S2=34, S3=12, S4=52, S5=28, S6=5.
 
-| README says | Actual |
+---
+
+## Files Changed Summary
+
+| File | Change |
 |---|---|
-| `behaviourshield/` root dir | `SHIELD/` |
-| `backend/behaviourshield.db` | `backend/db/shield.db` |
-| `backend/models/model_{user_id}.pkl` | `backend/ml/models/model_{uid}_{class}.pkl` |
-| `feature_schema.py — canonical 47-feature` | 55 features now |
-| `Nu: 0.05` | Code uses `nu=0.01` |
-| "6 scenarios + 1 control" (7 entries) | Code has 6 entries in SCENARIO_PROFILES + 1 legitimate |
-| `Platt scaling` calibration | Zone-based calibration (not Platt) |
+| `backend/ml/anomaly_explainer.py` | Merge conflict resolved, desktop templates preserved |
+| `backend/routers/session.py` | 47->55 dim, device_context wiring, correct function signatures |
+| `backend/routers/features.py` | 47->55 dim, vector padding, dimension-safe baseline |
+| `backend/routers/score.py` | 4-level action mapping from stored Score.action |
+| `backend/routers/scenarios.py` | Per-scenario anomalies, SIM flag for S2, detection times |
+| `backend/routers/enroll.py` | Dynamic baseline_score computation |
+| `backend/db/models.py` | Added Session.completed, Score.action, AlertLog.message_sid |
+| `backend/ml/fleet_anomaly.py` | Public register_device, session_count++, trust_level promotion |
+| `backend/ml/lstm_autoencoder.py` | FEATURE_DIM from schema (55), imports FEATURE_NAMES |
+| `backend/data/seed_legitimate.py` | 55-dim profiles with device trust + mouse defaults |
+| `backend/data/seed_attacker.py` | 55-dim profiles with attacker device context |
+| `backend/data/seed_scenarios.py` | Added detection_time_s to all 6 scenarios |
+| `backend/tests/test_model.py` | Fixed broken import, correct function calls |
+| `demo/seed_runner.py` | 55-dim vectors, device registration, sensible defaults |
+| `frontend/src/hooks/useBehaviorSDK.ts` | 55-feature SDK, fingerprinting, mouse/wheel tracking |
 
 ---
 
-## Summary — Priority Order
+## Remaining Non-Breaking Items (Documentation Only)
 
-| Priority | Count | Items |
+These do NOT cause runtime errors. They are README text that is stale but does not affect code execution.
+
+| README Reference | Actual | Impact |
 |---|---|---|
-| 🔴 Runtime crash | 10 | session.py 47-dim, missing device_context, wrong anomaly sig, features.py 47-dim, test import, seed 47-dim, fleet no session_count, lstm 47-dim |
-| 🟡 Missing files | 11 | .env.example, scoring.py, profiles.json, database.py, lib/, 3 demo docs, 2 test files |
-| 🟡 Schema drift | 7 | completed column, action column, message_sid, ID types |
-| 🟡 Route logic bugs | 5 | score action, scenarios device_context, hardcoded anomalies, missing SIM flag, hardcoded baseline |
-| 🟡 Frontend incomplete | 4 | 47-dim SDK, no device class, no fingerprint, no touch handler |
-| 🟡 Stale README text | 7 | dir name, db path, model path, feature count, nu value, calibration method |
+| `behaviourshield/` root dir | `SHIELD/` | None -- cosmetic |
+| `backend/behaviourshield.db` | `backend/db/shield.db` | None -- cosmetic |
+| "canonical 47-feature schema" | 55 features now | README text outdated |
+| `Nu: 0.05` | Code uses `nu=0.01` | README text outdated |
+| "Platt scaling calibration" | Zone-based calibration in code | README text outdated |
+| `.env.example` | Not created | Optional -- Twilio gracefully falls back |
+| `demo/demo_script.md`, `judge_qa.md`, `backup_video.md` | Not created | Demo docs -- not code |
+| `backend/tests/test_routes.py`, `test_scenarios.py` | Not created | Optional test files |
+| `backend/data/profiles.json` | Not created | seed_scenarios.py serves same purpose |
+| `frontend/src/lib/` | Not created | No utility functions needed currently |
+
+---
+
+## Post-Fix Action Required
+
+1. **Delete old `shield.db`** -- schema changed (new columns). Backend `init_db()` will recreate on startup.
+2. **Re-run `demo/seed_runner.py`** -- re-seeds 55-dim vectors into fresh DB.
+3. **Frontend**: Components that call `POST /session/start` should pass `device_class` and `device_fingerprint` from the SDK's exported values.

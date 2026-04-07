@@ -5,6 +5,7 @@ SCENARIO_PROFILES = {
         "description": "Attacker triggers SIM swap and uses a new mobile device to access account.",
         "expected_score": 27,
         "expected_action": "BLOCK_AND_FREEZE",
+        "detection_time_s": 28,
         "features": {
             "inter_key_delay_mean":     (310, 60),
             "inter_key_delay_std":      (90, 20),
@@ -26,6 +27,7 @@ SCENARIO_PROFILES = {
         "description": "SIM used for OTP only, fraud executed via desktop browser (no touch telemetry).",
         "expected_score": 31,
         "expected_action": "BLOCK_TRANSACTION",
+        "detection_time_s": 34,
         "features": {
             "inter_key_delay_mean":     (145, 20),
             "swipe_velocity_mean":      0,
@@ -46,6 +48,7 @@ SCENARIO_PROFILES = {
         "description": "Scripts autofill forms at inhuman speeds with zero timing variance.",
         "expected_score": 19,
         "expected_action": "BLOCK_AND_FREEZE",
+        "detection_time_s": 12,
         "features": {
             "inter_key_delay_mean":     (42, 2),
             "inter_key_delay_std":      (1.5, 0.3),
@@ -66,6 +69,7 @@ SCENARIO_PROFILES = {
         "description": "Attacker skips all browsing and goes directly to large fund transfer.",
         "expected_score": 42,
         "expected_action": "BLOCK_TRANSACTION",
+        "detection_time_s": 52,
         "features": {
             "inter_key_delay_mean":     (190, 25),
             "session_duration_ms":      (30000, 5000),
@@ -82,6 +86,7 @@ SCENARIO_PROFILES = {
         "description": "Attacker has physical device. Behavior differs slightly from owner.",
         "expected_score": 48,
         "expected_action": "STEP_UP_AUTH",
+        "detection_time_s": 28,
         "features": {
             "inter_key_delay_mean":     (210, 35),
             "session_duration_ms":      (95000, 8000),
@@ -128,6 +133,7 @@ SCENARIO_PROFILES = {
         "description": "Detection fires before login via telecom/SMS pattern (3 calls in 2 minutes).",
         "expected_score": 0,
         "expected_action": "BLOCK_TRANSACTION",
+        "detection_time_s": 5,
         "features": {
              # Pre-auth has no behavioral vector, but we fill with 0s for schema safety
         }

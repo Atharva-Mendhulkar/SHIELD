@@ -84,7 +84,7 @@ export const AttackSimulator: React.FC<AttackSimulatorProps> = ({
           </div>
           <div className="text-left">
             <div className="text-xs font-bold text-orange-500">4. Run Attack Protocol</div>
-            <div className="text-[10px] text-orange-500/50 italic">Simulate behavioral drift (47-features)</div>
+            <div className="text-[10px] text-orange-500/50 italic">Simulate behavioral drift (55-features)</div>
           </div>
         </button>
 

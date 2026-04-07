@@ -19,21 +19,15 @@ ANOMALY_TEMPLATES = {
     "click_speed_std":         "Interaction timing variance {direction} -- possible automation",
     "swipe_velocity_mean":     "Touch behavior absent -- possible non-mobile device",
     "form_field_order_entropy":"Form completion order atypical",
-<<<<<<< HEAD
-    "time_of_day_hour":        "Login at {hour}:00 — outside user's typical hours",
-    "typing_burst_count":      "Typing pattern: single unbroken burst — possible automation",
-    "error_rate":              "Zero typing errors — possible automated input",
-    # ── NEW: Desktop-specific templates
-    "device_class_switch":     "Device class switched from enrolled type — first {device_class} session",
-    "is_known_fingerprint":    "Device fingerprint not in trusted registry (seen < 3 times)",
-    "mouse_movement_entropy":  "Mouse movement entropy {direction} — possible bot or scripted input",
-    "mouse_speed_cv":          "Mouse speed variation {direction} baseline — possible automation",
-    "scroll_wheel_event_count":"Scroll wheel count {direction} expected range for device type",
-=======
     "time_of_day_hour":        "Login at {hour}:00 -- outside user's typical hours",
     "typing_burst_count":      "Typing pattern: single unbroken burst -- possible automation",
     "error_rate":              "Zero typing errors -- possible automated input",
->>>>>>> 3c7648e (refactor: standardize UI labels, update simulator workflow, and improve anomaly explanation formatting)
+    # Desktop-specific templates
+    "device_class_switch":     "Device class switched from enrolled type -- first {device_class} session",
+    "is_known_fingerprint":    "Device fingerprint not in trusted registry (seen < 3 times)",
+    "mouse_movement_entropy":  "Mouse movement entropy {direction} -- possible bot or scripted input",
+    "mouse_speed_cv":          "Mouse speed variation {direction} baseline -- possible automation",
+    "scroll_wheel_event_count":"Scroll wheel count {direction} expected range for device type",
 }
 
 
@@ -51,12 +45,12 @@ def explain_anomalies(
     Returns all 55 features ranked by absolute z-score (most anomalous first).
 
     Loads scaler for device_class='desktop' if available, falls back to 'all'.
-    Works with 55-feature vectors automatically — scaler dims match training dims.
+    Works with 55-feature vectors automatically -- scaler dims match training dims.
     """
     if len(feature_vector) != len(FEATURE_NAMES):
         raise ValueError(f"Expected {len(FEATURE_NAMES)} features, got {len(feature_vector)}")
 
-    # Scaler fallback: device-specific → all
+    # Scaler fallback: device-specific -> all
     scaler = None
     for dc in ([device_class, "all"] if device_class != "all" else ["all"]):
         try:
