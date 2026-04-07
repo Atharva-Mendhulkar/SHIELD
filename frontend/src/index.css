@@ -1,14 +1,44 @@
 @import "tailwindcss";
 
+@theme {
+  /* ─── Shield Design System Tokens ─── */
+  --color-shield-safe: #22C55E;
+  --color-shield-warning: #F59E0B;
+  --color-shield-critical: #EF4444;
+  --color-shield-green: #00FF88;
+  --color-shield-red: #FF3B3B;
+  --color-shield-amber: #FFB800;
+  --color-shield-blue: #3B82F6;
+  --color-shield-muted: #64748B;
+  --color-shield-border: rgba(255, 255, 255, 0.08);
+
+  /* ─── Brand Colors ─── */
+  --color-brand-gold: #F59E0B;
+  --color-brand-slate: #0F172A;
+  --color-brand-accent: #3B82F6;
+
+  /* ─── Surface Colors ─── */
+  --color-card: #0F172A;
+  --color-background: #020617;
+  --color-foreground: #F8FAFC;
+  --color-secondary: rgba(255, 255, 255, 0.05);
+  --color-accent: rgba(255, 255, 255, 0.05);
+  --color-border: rgba(255, 255, 255, 0.08);
+  --color-primary-foreground: #020617;
+
+  /* ─── Fonts ─── */
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-display: 'Manrope', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', 'DM Mono', ui-monospace, monospace;
+}
+
 :root {
   font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;
-
-  color-scheme: light dark;
+  color-scheme: dark;
   color: rgba(255, 255, 255, 0.87);
   background-color: #020617;
-
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -17,8 +47,6 @@
 
 body {
   margin: 0;
-  display: flex;
-  place-items: center;
   min-width: 320px;
   min-height: 100vh;
   background-color: #020617;
@@ -26,4 +54,85 @@ body {
 
 #root {
   width: 100%;
+}
+
+/* ─── Glass morphism ─── */
+.glass {
+  background: rgba(15, 23, 42, 0.8);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.gold-glow {
+  box-shadow: 0 0 20px rgba(245, 158, 11, 0.15);
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.page-transition {
+  transition: all 0.3s ease-in-out;
+}
+
+/* ─── Mobile App Animations ─── */
+@keyframes pulse-gold {
+  0%, 100% {
+    border-color: rgba(245, 158, 11, 0.2);
+    box-shadow: 0 0 5px rgba(245, 158, 11, 0.1);
+  }
+  50% {
+    border-color: rgba(245, 158, 11, 0.5);
+    box-shadow: 0 0 15px rgba(245, 158, 11, 0.3);
+  }
+}
+
+@keyframes glow-effect {
+  0%, 100% {
+    box-shadow: 0 0 0 rgba(245, 158, 11, 0.1);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(245, 158, 11, 0.15);
+  }
+}
+
+.shield-active {
+  animation: pulse-gold 3s infinite;
+}
+
+/* ─── Dashboard Animations ─── */
+@keyframes pulse-red {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 0.8; }
+}
+
+@keyframes pulse-dot {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.5); opacity: 0.5; }
+}
+
+@keyframes pulse-border {
+  0%, 100% { border-color: rgba(255, 184, 0, 0.3); }
+  50% { border-color: rgba(255, 184, 0, 0.8); }
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+.animate-pulse-red {
+  animation: pulse-red 2s ease-in-out infinite;
+}
+
+.animate-pulse-dot {
+  animation: pulse-dot 2s ease-in-out infinite;
+}
+
+/* ─── Simulator Grid Background ─── */
+.sim-grid-bg {
+  background-image: 
+    linear-gradient(rgba(30, 45, 74, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(30, 45, 74, 0.04) 1px, transparent 1px);
+  background-size: 40px 40px;
 }
