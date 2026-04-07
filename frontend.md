@@ -6,16 +6,16 @@
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
-│                        BEHAVIORSHIELD                               │
+│                        SHIELD                                       │
 │                                                                     │
-│  ┌──────────────────┐    ┌──────────────────┐    ┌──────────────┐  │
-│  │  Frontend 1      │    │  Frontend 2      │    │  Frontend 3  │  │
-│  │  Mobile Banking  │    │  Bank Analyst    │    │  Attack Sim  │  │
-│  │  App (Mock)      │    │  Dashboard       │    │  Control     │  │
-│  │                  │    │                  │    │  Panel       │  │
-│  │  React PWA       │    │  React Desktop   │    │  React       │  │
-│  │  375px viewport  │    │  Full-width      │    │  Full-width  │  │
-│  └────────┬─────────┘    └────────┬─────────┘    └──────┬───────┘  │
+│  ┌──────────────────┐    ┌──────────────────┐    ┌──────────────┐   │
+│  │  Frontend 1      │    │  Frontend 2      │    │  Frontend 3  │   │
+│  │  Mobile Banking  │    │  Bank Analyst    │    │  Attack Sim  │   │
+│  │  App (Mock)      │    │  Dashboard       │    │  Control     │   │
+│  │                  │    │                  │    │  Panel       │   │
+│  │  React PWA       │    │  React Desktop   │    │  React       │   │
+│  │  375px viewport  │    │  Full-width      │    │  Full-width  │   │
+│  └────────┬─────────┘    └────────┬─────────┘    └──────┬───────┘   │
 │           │                       │                      │          │
 │           └───────────────────────┴──────────────────────┘          │
 │                                   │                                 │
@@ -78,7 +78,7 @@
     ┌────┴────┐
     │         │
 ┌───▼───┐ ┌──▼──────────────┐
-│  ✅   │ │ 🔒 FREEZE MODAL │
+│  ✅   │ │ 🔒 FREEZE MODAL  │
 │ Done  │ │                 │
 │       │ │ Transaction     │
 │       │ │ blocked.        │
