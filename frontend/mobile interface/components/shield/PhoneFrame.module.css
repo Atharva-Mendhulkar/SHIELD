@@ -1,0 +1,85 @@
+.container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 20px;
+}
+
+.phoneFrame {
+  width: 375px;
+  height: 812px;
+  background-color: #000;
+  border-radius: 44px;
+  padding: 12px;
+  position: relative;
+  box-shadow: 
+    0 0 0 2px #333,
+    0 25px 50px -12px rgba(0, 0, 0, 0.5),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+}
+
+.phoneScreen {
+  width: 100%;
+  height: 100%;
+  background-color: var(--bg-dark);
+  border-radius: 34px;
+  overflow: hidden;
+  position: relative;
+}
+
+.notch {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 150px;
+  height: 30px;
+  background-color: #000;
+  border-bottom-left-radius: 20px;
+  border-bottom-right-radius: 20px;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.notchCamera {
+  width: 10px;
+  height: 10px;
+  background-color: #1a1a2e;
+  border-radius: 50%;
+  margin-right: 8px;
+}
+
+.notchSpeaker {
+  width: 50px;
+  height: 4px;
+  background-color: #1a1a2e;
+  border-radius: 2px;
+}
+
+.homeIndicator {
+  position: absolute;
+  bottom: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 134px;
+  height: 5px;
+  background-color: rgba(255, 255, 255, 0.3);
+  border-radius: 3px;
+  z-index: 100;
+}
+
+.screenContent {
+  width: 100%;
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-top: 44px;
+  padding-bottom: 20px;
+}
+
+.screenContent::-webkit-scrollbar {
+  display: none;
+}
