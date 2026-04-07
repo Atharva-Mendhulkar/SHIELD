@@ -1,6 +1,8 @@
 export interface SessionStart {
   user_id: number;
   session_type: string;
+  device_class?: string;
+  device_fingerprint?: string;
 }
 
 export interface FeatureSnapshot {
@@ -23,7 +25,7 @@ export interface FleetCheckRequest {
 export interface FleetCheckResponse {
   fleet_anomaly: boolean;
   accounts_seen: number;
-  flagged_accounts: number[];
+  affected_users: number[];
   action: string;
 }
 
@@ -33,12 +35,14 @@ export interface ScenarioInfo {
   description: string;
   expected_score: number;
   expected_action: string;
+  detection_time_s: number;
 }
 
 export interface ScenarioRunResponse {
   score_progression: number[];
   final_score: number;
   action: string;
+  detection_time_s: number;
   top_anomalies: string[];
 }
 
