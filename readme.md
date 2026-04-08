@@ -463,15 +463,17 @@ GET    /features/inspect/{session_id}
 
 ## ML ENGINE
 
-### One-Class SVM (Primary -- used in demo)
-```
-Algorithm:   sklearn.svm.OneClassSVM
-Kernel:      RBF (Gaussian) -- non-linear decision boundary
-Nu:          0.05 (accepts up to 5% of legitimate sessions as anomalous)
-Input:       47-dimensional feature vector, StandardScaler normalized
-Output:      Raw decision_function score → calibrated to 0–100 via Platt scaling
-Training:    10 legitimate sessions per user (~1 second to train)
-Storage:     backend/models/model_{user_id}.pkl + scaler_{user_id}.pkl
+### Mahalanobis Distance with Ledoit-Wolf Shrinkage (Primary)
+```text
+Algorithm:   Mahalanobis Distance using Ledoit-Wolf Shrinkage Covariance
+Rationale:   Ledoit-Wolf is the analytically optimal covariance estimator for extremely small datasets (N < D). It systematically shrinks toward the identity matrix, preventing singular matrix errors with 10 sessions across 55 metric dimensions.
+Input:       55-dimensional feature vector, StandardScaler normalized
+Risk Math:   score = 100 * exp(-λ * D_M(x)) 
+             Where `D_M` = Mahalanobis distance against the user's Ledoit-Wolf covariance.
+             Where `λ` = -ln(0.9) / mean_training_distance
+Properties:  Exponential scoring ensures outputs are monotonically bounded. Legitimate mean sets directly to score 90. Attackers gracefully asymptote toward 0.
+Training:    10 legitimate sessions per user (< 100ms to train)
+Storage:     Pickled binary large objects persisting in the PostgreSQL (Supabase) `MLModel` engine.
 ```
 
 ### Score Fusion Logic
