@@ -1,5 +1,6 @@
 {
-  "dependencies": {
-    "vercel": "^50.42.0"
+  "name": "shield-root",
+  "scripts": {
+    "build": "cd frontend && npm install && npm run build"
   }
 }
