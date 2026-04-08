@@ -63,14 +63,14 @@ app.add_middleware(
 # Router Registration
 # ─────────────────────────────────────────────────────────────
 
-app.include_router(session.router,   prefix="/session",   tags=["Session"])
-app.include_router(score.router,     prefix="/score",     tags=["Score"])
-app.include_router(enroll.router,    prefix="/enroll",    tags=["Enrollment"])
-app.include_router(sim_swap.router,  prefix="/sim-swap",  tags=["SIM Swap"])
-app.include_router(alert.router,     prefix="/alert",     tags=["Alerts"])
-app.include_router(scenarios.router, prefix="/scenarios", tags=["Scenarios"])
-app.include_router(features.router,  prefix="/features",  tags=["Features"])
-app.include_router(fleet.router,     prefix="/fleet",     tags=["Fleet"])
+app.include_router(session.router,   prefix="/api/session",   tags=["Session"])
+app.include_router(score.router,     prefix="/api/score",     tags=["Score"])
+app.include_router(enroll.router,    prefix="/api/enroll",    tags=["Enrollment"])
+app.include_router(sim_swap.router,  prefix="/api/sim-swap",  tags=["SIM Swap"])
+app.include_router(alert.router,     prefix="/api/alert",     tags=["Alerts"])
+app.include_router(scenarios.router, prefix="/api/scenarios", tags=["Scenarios"])
+app.include_router(features.router,  prefix="/api/features",  tags=["Features"])
+app.include_router(fleet.router,     prefix="/api/fleet",     tags=["Fleet"])
 
 # ─────────────────────────────────────────────────────────────
 # Startup
@@ -101,7 +101,7 @@ def root():
         "name": "SHIELD API",
         "status": "ACTIVE",
         "docs": "/docs",
-        "scenarios": "/scenarios/list",
+        "scenarios": "/api/scenarios/list",
     }
 
 

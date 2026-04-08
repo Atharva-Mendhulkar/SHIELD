@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import axios from 'axios';
 import type { ScoreResponse } from '../types';
 
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || '/api';
 
 interface KeyEvent { type: string; key: string; timestamp: number; }
 interface ClickEvent { x: number; y: number; timestamp: number; }

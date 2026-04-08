@@ -5,7 +5,7 @@ import axios from 'axios';
 import { useBehaviorSDK } from '../hooks/useBehaviorSDK';
 import { SandboxController } from '../components/sandbox/SandboxController';
 
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || '/api';
 
 /* ─── Phone Frame Wrapper ─── */
 const PhoneFrame = ({ children }: { children: React.ReactNode }) => (

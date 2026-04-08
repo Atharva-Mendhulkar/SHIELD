@@ -14,7 +14,7 @@ import numpy as np
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 from backend.db.database import ENGINE as engine, SessionLocal, Base, init_db
-from backend.db.models import User, Session as SessionModel
+from backend.db.models import User, Session as SessionModel, MLModel
 from backend.data.seed_data import generate_legitimate_sessions, generate_scenario_session
 from backend.ml.one_class_svm import train, predict, get_baseline_stats, model_exists
 from backend.ml.score_fusion import fuse_score
@@ -26,39 +26,47 @@ from backend.ml.feature_schema import FEATURE_NAMES, FEATURE_DIM
 # Fixtures
 # ─────────────────────────────────────────────────────────────
 
+@pytest.fixture(scope="module")
+def db_session():
+    db = SessionLocal()
+    yield db
+    db.close()
+
 @pytest.fixture(scope="module", autouse=True)
-def setup_db_and_train():
+def setup_db_and_train(db_session):
     """
     Module-scoped setup: create tables, seed data, train model.
     Runs once for all tests in this file.
     """
     Base.metadata.drop_all(bind=engine)
     Base.metadata.create_all(bind=engine)
-    db = SessionLocal()
 
     # Create user
-    db.add(User(id=1, name="Test User"))
-    db.commit()
+    db_session.add(User(id=1, name="Test User"))
+    db_session.commit()
 
     # Generate and store legitimate sessions
     vectors = generate_legitimate_sessions(n=15)
     for vec in vectors:
-        db.add(SessionModel(
+        db_session.add(SessionModel(
             user_id=1,
             session_type="legitimate",
             device_class="mobile",
             feature_vector=json.dumps(vec),
             completed=True,
         ))
-    db.commit()
-    db.close()
+    db_session.commit()
 
     # Train model
-    train(user_id=1, feature_vectors=vectors)
+    train(db=db_session, user_id=1, feature_vectors=vectors)
 
     yield  # tests run here
 
-    # Cleanup model files
+    # Cleanup DB MLModel
+    db_session.query(MLModel).filter_by(user_id=1).delete()
+    db_session.commit()
+    
+    # Cleanup any lingering model files from old code just in case
     model_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "ml", "models")
     for f in os.listdir(model_dir) if os.path.isdir(model_dir) else []:
         if f.startswith(("model_1", "scaler_1", "calibration_1", "meta_1")):
@@ -71,8 +79,8 @@ def legit_vectors():
 
 
 @pytest.fixture(scope="module")
-def baseline():
-    return get_baseline_stats(1)
+def baseline(db_session):
+    return get_baseline_stats(db_session, 1)
 
 
 # ─────────────────────────────────────────────────────────────
@@ -80,48 +88,48 @@ def baseline():
 # ─────────────────────────────────────────────────────────────
 
 class TestSVM:
-    def test_model_exists(self):
-        assert model_exists(1), "Model should exist after training"
+    def test_model_exists(self, db_session):
+        assert model_exists(db_session, 1), "Model should exist after training"
 
-    def test_legitimate_scores_high(self, legit_vectors):
+    def test_legitimate_scores_high(self, db_session, legit_vectors):
         """Legitimate sessions must score ≥ 75."""
         for vec in legit_vectors:
-            score = predict(1, vec)
+            score = predict(db_session, 1, vec)
             assert score >= 70, f"Legitimate session scored {score} — too low (need ≥70)"
 
-    def test_scenario_1_scores_low(self):
+    def test_scenario_1_scores_low(self, db_session):
         """Scenario 1 (new phone + SIM) should score low."""
         result = generate_scenario_session(1)
-        score = predict(1, result["feature_vector"])
+        score = predict(db_session, 1, result["feature_vector"])
         assert score <= 55, f"Scenario 1 scored {score} — not low enough"
 
-    def test_scenario_3_lowest(self):
+    def test_scenario_3_lowest(self, db_session):
         """Scenario 3 (bot automation) should be the strongest anomaly."""
         result = generate_scenario_session(3)
-        score = predict(1, result["feature_vector"])
+        score = predict(db_session, 1, result["feature_vector"])
         assert score <= 50, f"Scenario 3 scored {score} — bot should be lowest"
 
-    def test_scenario_4_moderate(self):
+    def test_scenario_4_moderate(self, db_session):
         """Scenario 4 (same device takeover) is hardest — moderate score."""
         result = generate_scenario_session(4)
-        score = predict(1, result["feature_vector"])
+        score = predict(db_session, 1, result["feature_vector"])
         # This scenario is harder to detect — allow wider range up to 85 (fused score drops it to step-up)
         assert score <= 85, f"Scenario 4 scored {score} — too high for same-device takeover"
 
-    def test_score_0_to_100_range(self):
+    def test_score_0_to_100_range(self, db_session):
         """Scores must always be in [0, 100]."""
         for i in range(1, 6):
             result = generate_scenario_session(i)
             if result["pre_auth"]:
                 continue
-            score = predict(1, result["feature_vector"])
+            score = predict(db_session, 1, result["feature_vector"])
             assert 0 <= score <= 100, f"Score {score} out of range"
 
-    def test_progressive_snapshots_decrease(self):
+    def test_progressive_snapshots_decrease(self, db_session):
         """Score should generally decrease across progressive snapshots."""
         # Since some scenarios instantly drop to 0, use Scenario 4 for a smooth progression
         result = generate_scenario_session(4)
-        scores = [predict(1, snap) for snap in result["snapshots"]]
+        scores = [predict(db_session, 1, snap) for snap in result["snapshots"]]
         
         # Check monotonicity (allow small bumps due to variance)
         for i in range(1, len(scores)):

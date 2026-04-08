@@ -734,23 +734,38 @@ python -m venv venv && source venv/bin/activate
 pip install -r requirements.txt
 
 # 3. Seed all data and train model (run this before every demo)
-python demo/seed_runner.py
+# Note: Ensure POSTGRES_URL is set in .env if using Supabase, otherwise SQLite is used.
+python seed_runner.py
 # Expected: "[DONE] 10 legitimate sessions | [DONE] 6 attack scenarios | [DONE] Model trained | Ready"
 
 # 4. Start backend
 uvicorn main:app --reload --port 8000
 
 # 5. Frontend (new terminal)
-cd frontend
+cd ../frontend
 npm install
 npm run dev
-# Frontend 1: localhost:5173/
-# Frontend 2: localhost:5173/dashboard
-# Frontend 3: localhost:5173/simulator
+# Frontend 1: http://localhost:5173/
+# Frontend 2: http://localhost:5173/dashboard
+# Frontend 3: http://localhost:5173/simulator
 
-# 6. Verify
-curl http://localhost:8000/scenarios/list
+# 6. Verify (Note the /api prefix)
+curl http://localhost:8000/api/scenarios/list
 # Should return 6 scenarios
+
+---
+
+## DEPLOYMENT (VERCEL + SUPABASE)
+
+This project has been migrated to support Vercel serverless functions with a Supabase PostgreSQL backend.
+
+1. **Database:** Set up a Supabase PostgreSQL instance. Copy the connection string to `.env` as `DATABASE_URL`.
+2. **Vercel CLI:** Install the Vercel CLI (`npm i -g vercel`).
+3. **Deploy:** From the project root, simply run `vercel`.
+   - Vercel will process the `vercel.json` configuration in the root directory.
+   - The Vite frontend (`/frontend`) will be built to `/dist` and statically served.
+   - The FastAPI backend (`/backend/main.py`) will automatically execute within Vercel Edge functions via `@vercel/python`.
+   - FastAPI `/api/*` proxy rewrite rules are handled automatically.
 ```
 
 ---

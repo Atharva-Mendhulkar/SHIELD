@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import { MOCK_FEATURES } from './types';
 
-const API_BASE = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
+const API_BASE = import.meta.env.VITE_BACKEND_URL || '/api';
 
 interface FeatureInspectorProps {
   visible: boolean;

@@ -6,7 +6,7 @@ import FeatureInspector from '../components/simulator/FeatureInspector';
 import LegacyContrast from '../components/simulator/LegacyContrast';
 import { SCENARIOS, type ScenarioResult, type StepStatus } from '../components/simulator/types';
 
-const API_BASE = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
+const API_BASE = import.meta.env.VITE_BACKEND_URL || '/api';
 
 const SCENARIO_SCORES: Record<number, { score: number; result: 'BLOCKED' | 'STEP-UP' | 'ALLOWED' | 'ALL FROZEN'; time: string }> = {
   1: { score: 12, result: 'BLOCKED', time: '0.8s' },

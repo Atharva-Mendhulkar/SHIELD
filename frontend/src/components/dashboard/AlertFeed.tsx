@@ -34,7 +34,7 @@ const AlertFeed = ({ sessionId, topAnomalies = [], action, riskLevel }: AlertFee
   const handleSendAlert = async () => {
     if (!sessionId) return;
     try {
-      await fetch("http://localhost:8000/alert/send", { 
+      await fetch("/api/alert/send", { 
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ session_id: sessionId, alert_type: "SMS" })
