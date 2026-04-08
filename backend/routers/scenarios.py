@@ -102,7 +102,7 @@ def run_scenario(scenario_id: int, user_id: int = 1, db: DBSession = Depends(get
     sim_swap_active = sim_swap is not None
 
     # Get baseline stats for interpolation
-    meta = get_baseline_stats(user_id)
+    meta = get_baseline_stats(db, user_id)
     legitimate_vector = meta["per_feature_mean"]
 
     # Compute score progression across 5 snapshots
@@ -115,12 +115,12 @@ def run_scenario(scenario_id: int, user_id: int = 1, db: DBSession = Depends(get
             (1 - alpha) * l + alpha * a
             for l, a in zip(legitimate_vector, feature_vector)
         ]
-        raw_score = predict(user_id, partial)
+        raw_score = predict(db, user_id, partial)
         fusion = fuse_score(raw_score, sim_swap_active)
         score_progression.append(fusion["final_score"])
 
     # Final score on full attacker vector
-    final_raw = predict(user_id, feature_vector)
+    final_raw = predict(db, user_id, feature_vector)
     final_fusion = fuse_score(final_raw, sim_swap_active)
 
     # Anomaly explanations

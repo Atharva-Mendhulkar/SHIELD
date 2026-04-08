@@ -121,7 +121,7 @@ def submit_feature(req: FeatureRequest, db: DBSession = Depends(get_db)):
     if not session:
         raise HTTPException(404, "Session not found")
 
-    if not model_exists(session.user_id):
+    if not model_exists(db, session.user_id):
         raise HTTPException(400, "User not enrolled. Call POST /enroll/{user_id} first.")
 
     # Step 1: Merge snapshot into existing session vector
@@ -140,7 +140,7 @@ def submit_feature(req: FeatureRequest, db: DBSession = Depends(get_db)):
     feature_vector = current_vector
 
     # Step 3: ML scoring
-    behavior_score = predict(session.user_id, feature_vector)
+    behavior_score = predict(db, session.user_id, feature_vector)
 
     # Step 4: Check SIM swap status
     sim_swap = (
@@ -158,7 +158,7 @@ def submit_feature(req: FeatureRequest, db: DBSession = Depends(get_db)):
     fusion = fuse_score(behavior_score, sim_swap_active, device_context)
 
     # Step 7: Generate anomaly explanations
-    meta = get_baseline_stats(session.user_id)
+    meta = get_baseline_stats(db, session.user_id)
     anomalies = get_top_anomalies(
         feature_vector=feature_vector,
         per_feature_mean=meta["per_feature_mean"],

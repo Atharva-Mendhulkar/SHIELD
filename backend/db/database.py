@@ -27,12 +27,28 @@ load_dotenv()
 
 DB_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)))
 DB_PATH = os.getenv("DB_PATH", os.path.join(DB_DIR, "shield.db"))
+DATABASE_URL = os.getenv("DATABASE_URL")
 
-ENGINE = create_engine(
-    f"sqlite:///{DB_PATH}",
-    connect_args={"check_same_thread": False},
-    echo=False,
-)
+if DATABASE_URL:
+    # Use PostgreSQL / Supabase
+    # SQLAlchemy sometimes expects postgresql:// instead of postgres://
+    if DATABASE_URL.startswith("postgres://"):
+        DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
+        
+    ENGINE = create_engine(
+        DATABASE_URL,
+        pool_size=10,
+        max_overflow=20,
+        pool_pre_ping=True, # Recommended for serverless/managed DBs
+        echo=False,
+    )
+else:
+    # Fallback to local SQLite
+    ENGINE = create_engine(
+        f"sqlite:///{DB_PATH}",
+        connect_args={"check_same_thread": False},
+        echo=False,
+    )
 
 SessionLocal = sessionmaker(bind=ENGINE, autocommit=False, autoflush=False)
 
@@ -52,7 +68,7 @@ class Base(DeclarativeBase):
 def init_db():
     """Create all tables. Import models first to register them with Base."""
     from backend.db.models import (  # noqa: F401
-        User, Session, Score, SimSwapEvent, AlertLog, DeviceRegistry
+        User, Session, Score, SimSwapEvent, AlertLog, DeviceRegistry, MLModel
     )
     Base.metadata.create_all(bind=ENGINE)
 

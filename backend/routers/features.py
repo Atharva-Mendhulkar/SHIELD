@@ -30,7 +30,7 @@ def inspect_features(session_id: str, db: DBSession = Depends(get_db)):
     feature_vector = json.loads(session.feature_vector)
 
     try:
-        meta = get_baseline_stats(session.user_id)
+        meta = get_baseline_stats(db, session.user_id)
     except FileNotFoundError:
         raise HTTPException(400, "User not enrolled — no baseline stats available")
 

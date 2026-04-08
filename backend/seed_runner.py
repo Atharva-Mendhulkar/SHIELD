@@ -108,7 +108,7 @@ def run():
 
     # ── Step 6: Train Mahalanobis model ───────────────────────────────────────
     header("6. Training Mahalanobis Distance Scorer")
-    meta = train(user_id=1, feature_vectors=legitimate_vectors)
+    meta = train(db=db, user_id=1, feature_vectors=legitimate_vectors)
     ok(f"Model trained")
     ok(f"Baseline: {meta['baseline_mean']:.1f} ± {meta['baseline_std']:.1f}")
     ok(f"Lambda (calibration): {meta['lambda']:.4f}")
@@ -145,7 +145,7 @@ def run():
         db.commit()
 
         # Score with SIM swap active (how it fires in demo)
-        raw_score = predict(1, data["feature_vector"])
+        raw_score = predict(db, 1, data["feature_vector"])
         fusion = fuse_score(raw_score, sim_swap_active=True)
         final = fusion["final_score"]
 
@@ -167,6 +167,7 @@ def run():
     # ── Step 8: Diagnostic report ─────────────────────────────────────────────
     header("8. Full diagnostic report")
     report = diagnostic_report(
+        db=db,
         user_id=1,
         legitimate_vectors=legitimate_vectors,
         attacker_vectors=attacker_vectors_for_diagnostic,
@@ -200,7 +201,7 @@ def run():
     for i in range(5):
         alpha = (i + 1) / 5.0
         partial = [(1 - alpha) * l + alpha * a for l, a in zip(legit_vec, attacker_vec)]
-        raw = predict(1, partial)
+        raw = predict(db, 1, partial)
         fused = fuse_score(raw, sim_swap_active=True)["final_score"]
         progression.append(fused)
 

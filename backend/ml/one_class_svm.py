@@ -32,41 +32,27 @@ passed in by the caller (enroll router or seed_runner). This is the
 correct separation of concerns.
 """
 
-import os
 import json
 import pickle
 import logging
 import numpy as np
 from sklearn.covariance import LedoitWolf
 from sklearn.preprocessing import StandardScaler
+from sqlalchemy.orm import Session
 
 from backend.ml.feature_schema import FEATURE_NAMES
+from backend.db.models import MLModel
 
 logger = logging.getLogger("shield.ml.scorer")
 
-MODEL_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "models")
 N_FEATURES = len(FEATURE_NAMES)  # 55
-
-
-# ─────────────────────────────────────────────────────────────────────────────
-# FILE PATHS
-# ─────────────────────────────────────────────────────────────────────────────
-
-def _scaler_path(user_id: int) -> str:
-    return os.path.join(MODEL_DIR, f"scaler_{user_id}.pkl")
-
-def _cov_path(user_id: int) -> str:
-    return os.path.join(MODEL_DIR, f"cov_{user_id}.pkl")
-
-def _meta_path(user_id: int) -> str:
-    return os.path.join(MODEL_DIR, f"meta_{user_id}.json")
 
 
 # ─────────────────────────────────────────────────────────────────────────────
 # TRAINING
 # ─────────────────────────────────────────────────────────────────────────────
 
-def train(user_id: int, feature_vectors: list[list[float]]) -> dict:
+def train(db: Session, user_id: int, feature_vectors: list[list[float]]) -> dict:
     """
     Fit a regularized Mahalanobis distance scorer on legitimate sessions.
 
@@ -93,8 +79,6 @@ def train(user_id: int, feature_vectors: list[list[float]]) -> dict:
             mean_training_distance: float,
         }
     """
-    os.makedirs(MODEL_DIR, exist_ok=True)
-
     X = np.array(feature_vectors, dtype=float)  # (N, 55)
     N, D = X.shape
 
@@ -146,15 +130,10 @@ def train(user_id: int, feature_vectors: list[list[float]]) -> dict:
         "precision_matrix": precision_matrix.tolist(),
         "lam": lam,
     }
-    with open(_cov_path(user_id), "wb") as f:
-        pickle.dump(artifacts, f)
-    with open(_scaler_path(user_id), "wb") as f:
-        pickle.dump(scaler, f)
-
-    # Per-feature stats for anomaly_explainer (in ORIGINAL space, not scaled)
+    
     per_feature_mean = X.mean(axis=0).tolist()
     per_feature_std  = np.maximum(X.std(axis=0), 1e-6).tolist()
-
+    
     meta = {
         "baseline_mean": baseline_mean,
         "baseline_std":  baseline_std,
@@ -165,10 +144,21 @@ def train(user_id: int, feature_vectors: list[list[float]]) -> dict:
         "per_feature_mean": per_feature_mean,
         "per_feature_std":  per_feature_std,
     }
-    with open(_meta_path(user_id), "w") as f:
-        json.dump(meta, f, indent=2)
 
-    logger.info(f"Model saved for user {user_id}: {_cov_path(user_id)}")
+    model_record = db.query(MLModel).filter_by(user_id=user_id).first()
+    if not model_record:
+        model_record = MLModel(user_id=user_id)
+        db.add(model_record)
+        
+    model_record.scaler = pickle.dumps(scaler)
+    storage_payload = {
+        "artifacts": artifacts,
+        "meta": meta
+    }
+    model_record.covariance = pickle.dumps(storage_payload)
+    db.commit()
+
+    logger.info(f"Model saved to Database for user {user_id}")
     return meta
 
 
@@ -176,7 +166,7 @@ def train(user_id: int, feature_vectors: list[list[float]]) -> dict:
 # PREDICTION
 # ─────────────────────────────────────────────────────────────────────────────
 
-def predict(user_id: int, feature_vector: list[float]) -> int:
+def predict(db: Session, user_id: int, feature_vector: list[float]) -> int:
     """
     Predict confidence score for a session feature vector.
 
@@ -198,7 +188,7 @@ def predict(user_id: int, feature_vector: list[float]) -> int:
     if len(feature_vector) != N_FEATURES:
         raise ValueError(f"Expected {N_FEATURES} features, got {len(feature_vector)}")
 
-    scaler, artifacts = _load_artifacts(user_id)
+    scaler, artifacts, meta = _load_artifacts(db, user_id)
 
     x = np.array(feature_vector, dtype=float).reshape(1, -1)
     x_scaled = scaler.transform(x).flatten()
@@ -211,9 +201,9 @@ def predict(user_id: int, feature_vector: list[float]) -> int:
     return _distance_to_score(d, lam)
 
 
-def predict_batch(user_id: int, feature_vectors: list[list[float]]) -> list[int]:
+def predict_batch(db: Session, user_id: int, feature_vectors: list[list[float]]) -> list[int]:
     """Predict scores for multiple vectors at once. More efficient for scenario runs."""
-    scaler, artifacts = _load_artifacts(user_id)
+    scaler, artifacts, meta = _load_artifacts(db, user_id)
 
     X = np.array(feature_vectors, dtype=float)
     X_scaled = scaler.transform(X)
@@ -230,34 +220,33 @@ def predict_batch(user_id: int, feature_vectors: list[list[float]]) -> list[int]
 # METADATA ACCESS
 # ─────────────────────────────────────────────────────────────────────────────
 
-def get_baseline_stats(user_id: int) -> dict:
+def get_baseline_stats(db: Session, user_id: int) -> dict:
     """
     Returns per-feature mean, std, and model metadata.
     Used by anomaly_explainer for z-score computation.
     """
-    with open(_meta_path(user_id), "r") as f:
-        return json.load(f)
+    _, _, meta = _load_artifacts(db, user_id)
+    return meta
 
-def model_exists(user_id: int) -> bool:
-    return os.path.exists(_cov_path(user_id))
+def model_exists(db: Session, user_id: int) -> bool:
+    return db.query(MLModel).filter_by(user_id=user_id).first() is not None
 
 
 # ─────────────────────────────────────────────────────────────────────────────
 # INTERNAL HELPERS
 # ─────────────────────────────────────────────────────────────────────────────
 
-def _load_artifacts(user_id: int):
-    """Returns (scaler, artifacts_dict). Raises FileNotFoundError if missing."""
-    if not model_exists(user_id):
+def _load_artifacts(db: Session, user_id: int):
+    """Returns (scaler, artifacts_dict, meta_dict). Raises FileNotFoundError if missing."""
+    model_record = db.query(MLModel).filter_by(user_id=user_id).first()
+    if not model_record:
         raise FileNotFoundError(
             f"No trained model for user {user_id}. "
             f"Run POST /enroll/{user_id} or seed_runner.py first."
         )
-    with open(_scaler_path(user_id), "rb") as f:
-        scaler = pickle.load(f)
-    with open(_cov_path(user_id), "rb") as f:
-        artifacts = pickle.load(f)
-    return scaler, artifacts
+    scaler = pickle.loads(model_record.scaler)
+    storage_payload = pickle.loads(model_record.covariance)
+    return scaler, storage_payload["artifacts"], storage_payload["meta"]
 
 def _mahalanobis_single(x: np.ndarray, mu: np.ndarray, precision: np.ndarray) -> float:
     """
@@ -300,7 +289,7 @@ def _distance_to_score(distance: float, lam: float) -> int:
 # DIAGNOSTICS (call from seed_runner.py to verify calibration)
 # ─────────────────────────────────────────────────────────────────────────────
 
-def diagnostic_report(user_id: int, legitimate_vectors: list[list[float]],
+def diagnostic_report(db: Session, user_id: int, legitimate_vectors: list[list[float]],
                        attacker_vectors: dict[str, list[float]]) -> dict:
     """
     Runs all vectors through the trained model and returns a calibration report.
@@ -312,7 +301,7 @@ def diagnostic_report(user_id: int, legitimate_vectors: list[list[float]],
 
     Returns dict with per-scenario score summaries.
     """
-    legit_scores = predict_batch(user_id, legitimate_vectors)
+    legit_scores = predict_batch(db, user_id, legitimate_vectors)
 
     report = {
         "legitimate": {
@@ -326,7 +315,7 @@ def diagnostic_report(user_id: int, legitimate_vectors: list[list[float]],
     }
 
     for scenario_key, vector in attacker_vectors.items():
-        score = predict(user_id, vector)
+        score = predict(db, user_id, vector)
         report["attackers"][scenario_key] = {"score": score}
 
     return report

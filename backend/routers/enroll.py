@@ -14,7 +14,7 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session as DBSession
 
 from backend.db.database import get_db
-from backend.db.models import Session as SessionModel, User, Score, DeviceRegistry
+from backend.db.models import Session as SessionModel, User, Score, DeviceRegistry, MLModel
 from backend.ml.one_class_svm import train, model_exists
 
 logger = logging.getLogger("shield.enroll")
@@ -63,7 +63,7 @@ def enroll(user_id: int, db: DBSession = Depends(get_db)):
     ]
 
     # Train model (decoupled — pure function)
-    meta = train(user_id=user_id, feature_vectors=feature_vectors)
+    meta = train(db=db, user_id=user_id, feature_vectors=feature_vectors)
 
     # Update user enrollment timestamp
     user.enrolled_at = datetime.utcnow()
@@ -111,13 +111,8 @@ def reset_user(user_id: int, db: DBSession = Depends(get_db)):
 
         db.commit()
 
-        # Delete model files
-        model_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "ml", "models")
-        for suffix in ["cov", "scaler", "meta"]:
-            ext = "json" if suffix == "meta" else "pkl"
-            path = os.path.join(model_dir, f"{suffix}_{user_id}.{ext}")
-            if os.path.exists(path):
-                os.remove(path)
+        # Delete model records
+        db.query(MLModel).filter_by(user_id=user_id).delete()
 
         logger.info(f"User {user_id} reset: {deleted_sessions} sessions cleared")
         return {"reset": True, "cleared_sessions": deleted_sessions, "user_id": user_id}

@@ -16,7 +16,7 @@ import uuid
 from datetime import datetime
 from sqlalchemy import (
     Column, Integer, String, Float, Boolean,
-    DateTime, Text, ForeignKey, Index
+    DateTime, Text, ForeignKey, Index, LargeBinary
 )
 from backend.db.database import Base
 
@@ -128,3 +128,16 @@ class DeviceRegistry(Base):
     __table_args__ = (
         Index("ix_device_fp_user", "device_fingerprint", "user_id"),
     )
+
+# ─────────────────────────────────────────────────────────────
+# TABLE 7: ml_models
+# ─────────────────────────────────────────────────────────────
+
+class MLModel(Base):
+    __tablename__ = "ml_models"
+
+    id         = Column(String(36), primary_key=True, default=_new_uuid)
+    user_id    = Column(Integer, ForeignKey("users.id"), nullable=False, unique=True, index=True)
+    scaler     = Column(LargeBinary, nullable=False)
+    covariance = Column(LargeBinary, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

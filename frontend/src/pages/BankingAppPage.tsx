@@ -115,7 +115,7 @@ export const BankingAppPage = () => {
           <nav className="sticky top-0 w-full z-50 glass px-5 py-3.5 flex justify-between items-center">
             <div className="flex items-center space-x-2">
               <div className="w-7 h-7 bg-brand-gold rounded-lg flex items-center justify-center font-extrabold text-slate-950 text-xs">IB</div>
-              <span className="font-bold text-base tracking-tight">INDRA BANK</span>
+              <span className="font-bold text-base tracking-tight">ROTHSCHILD BANK</span>
             </div>
             <div className="flex items-center space-x-1.5 px-2.5 py-1 rounded-full border border-brand-gold/20 bg-brand-gold/5 shield-active">
               <div className="w-1.5 h-1.5 rounded-full bg-brand-gold animate-ping" />
